@@ -1,3 +1,5 @@
+![image](axcrew.png)
+
 # AxCrew - A Crew of AI Agents (built with AxLLM)
 
 This repo simplifies development of [AxLLM](https://axllm.dev) AI Agents by using config to instantiate agents. This means you can write a library of functions, and quickly invoke AI agents to use them using a simple configuration file.
