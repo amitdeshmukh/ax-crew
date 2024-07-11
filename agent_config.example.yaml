@@ -2,7 +2,7 @@
 crew:
 - name: Planner
   description: Creates a plan to complete a task
-  signature: task:string "a task to be completed" -> plan:string "a plan to execute the task based on company policies and operations"
+  signature: task:string "a task to be completed" -> plan:string "a plan to execute the task in 5 steps or less"
   provider: anthropic
   provider_key_name: ANTHROPIC_API_KEY
   ai:
@@ -24,8 +24,8 @@ crew:
     codeExecution: true
 
 - name: Manager
-  description: Answers questions about company policies and operations
-  signature: question:string "a question from a user about company policies and operations", plan:string "a suggested plan to answer the question" -> answer:string "the answer"
+  description: Answers questions from the user
+  signature: question:string "a question from a user", plan:string "a suggested plan to answer the question" -> answer:string "the answer"
   provider: anthropic
   provider_key_name: ANTHROPIC_API_KEY
   ai:
