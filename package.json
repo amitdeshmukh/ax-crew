@@ -1,0 +1,27 @@
+{
+  "type": "module",
+  "name": "@amitdeshmukh/ax-crew",
+  "version": "1.0.6",
+  "description": "Build and launch a crew of AI agents with shared state. Built with axllm.dev",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=21.0.0"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc --outDir dist",
+    "release": "npm run build && npm publish --access public"
+  },
+  "dependencies": {
+    "@ax-llm/ax": "^9.0.23",
+    "dotenv": "^16.4.5",
+    "js-yaml": "^4.1.0",
+    "uuid": "^10.0.0"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.14.9",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.5.3"
+  }
+}

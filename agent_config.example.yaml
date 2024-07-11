@@ -1,0 +1,41 @@
+# AxLLM Crew config
+crew:
+- name: Planner
+  description: Creates a plan to complete a task
+  signature: task:string "a task to be completed" -> plan:string "a plan to execute the task based on company policies and operations"
+  provider: anthropic
+  provider_key_name: ANTHROPIC_API_KEY
+  ai:
+    model: claude-3-5-sonnet-20240620
+    temperature: 0
+  options:
+    debug: true
+
+- name: Calculator
+  description: Solves math problems
+  signature: mathProblem:string "a math problem to be solved using Python code" -> solution:string "the solution to the math problem"
+  provider: google-gemini
+  provider_key_name: GEMINI_API_KEY
+  ai:
+    model: gemini-1.5-pro
+    temperature: 0
+  options:
+    debug: true
+    codeExecution: true
+
+- name: Manager
+  description: Answers questions about company policies and operations
+  signature: question:string "a question from a user about company policies and operations", plan:string "a suggested plan to answer the question" -> answer:string "the answer"
+  provider: anthropic
+  provider_key_name: ANTHROPIC_API_KEY
+  ai:
+    model: claude-3-5-sonnet-20240620
+    temperature: 0
+  options:
+    debug: true
+  functions:
+    - CurrentDateTime
+    - DaysBetweenDates
+  agents:
+    - Calculator
+
