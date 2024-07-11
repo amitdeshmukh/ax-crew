@@ -35,7 +35,7 @@ const configFilePath = './agent_config.example.yaml';
 const crew = new AxCrew(configFilePath);
 ```
 
-### Adding Agents to the Crew
+## Adding Agents to the Crew
 You can add a sub-set of available agents from the config file to the crew by passing their names as an array to the `addAgentsToCrew` method.
 
 Ensure that:
@@ -54,7 +54,7 @@ const Planner = agents.get("Planner");
 const Manager = agents.get("Manager");
 ```
 
-### State Management
+## State Management
 
 The `StatefulAxAgent` class in `src/agents/index.js` allows for shared state functionality across agents. Sub-agents can be added to an agent to create complex behaviors. All agents in the crew have access to the shared state. State can also be shared with functions that are passed to the agents. To do this, pass the `state` object as an argument to the function class as shown here https://axllm.dev/guides/functions-1/
 
