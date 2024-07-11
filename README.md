@@ -13,37 +13,36 @@ This repo simplifies development of [AxLLM](https://axllm.dev) AI Agents by usin
 
 ### Installation
 ```bash
-npm install @buddhic-ai/agents
+npm install @amitdeshmukh/ax-crew
 ```
 
 ### Environment Setup
 Refer to the [.env.example](.env.example) file for the required environment variables. These will need to be set in the environment where the agents are run.
 
-## Crew Configuration
-A Crew is a team of agents that work together to achieve a common goal. The configuration file for a crew is a YAML file that defines the agents in the crew, along with their configuration.
+## Creating the Crew
+A Crew is a team of agents that work together to achieve a common goal. The configuration file for a crew is a YAML file that defines the agents in the crew, along with their individual configurations.
 
-An example configuration is provided in `agent_config.example.yaml`. 
+See [agent_config.example.yaml](agent_config.example.yaml) for an example.
 
-### Creating the Crew
-To initialize a crew of agents, create a configuration file in YAML format, and pass it to the `AxCrew` constructor.
-
-See [agent_config.example.yaml](agent_config.example.yaml) for an example configuration file.
+To initialize a crew of agents, pass a config file to the `AxCrew` constructor.
 
 ```javascript
-// Import the AgentCrew class
-import AgentCrew from './src/agents/index.js';
+// Import the AxCrew class
+import { AxCrew } from '@amitdeshmukh/ax-crew';
 
-// Create a new instance of AgentCrew
+// Create a new instance of AxCrew
 const configFilePath = './agent_config.example.yaml';
-const crew = new AgentCrew(configFilePath);
+const crew = new AxCrew(configFilePath);
 ```
 
 ### Adding Agents to the Crew
-You can add a sub-set of defined agents from the configuration file to the crew by passing their names as an array to the `addAgents` method.
+You can add a sub-set of available agents from the config file to the crew by passing their names as an array to the `addAgentsToCrew` method.
 
-Please ensure that the agents are defined in the configuration file before adding them to the crew. Also, the order in which the agents are added to the crew is important, as an error will be thrown if an agent is added before its dependent agents.
+Ensure that:
+  - agents are defined in the configuration file before adding them to the crew. 
+  - agents added in the right order (an error will be thrown if an agent is added before its dependent agents).
 
-For example, the `Manager` agent in the configuration file depends on the `Planner` and `Calculator` agents. Therefore, the `Planner` and `Calculator` agents must be added to the crew before the `Manager` agent.
+For example, the `Manager` agent in the configuration file depends on the `Planner` and `Calculator` agents. So the `Planner` and `Calculator` agents must be added to the crew before the `Manager` agent can be added.
 
 ```javascript
 // Add agents by providing their names
@@ -61,7 +60,7 @@ The `StatefulAxAgent` class in `src/agents/index.js` allows for shared state fun
 
 
 ```javascript
-// Set some state (key/value) for the crew
+// Set some state (key/value) for this crew
 crew.state.set('name', 'Crew1');
 crew.state.set('location', 'Earth');
 
@@ -70,11 +69,11 @@ crew.state.get('name'); // 'Crew1'
 crew.state.getAll(); // { name: 'Crew1', location: 'Earth' }
 ``` 
 
-State can also be set/get by individual agents in the crew. This state is shared with all agents and functions if passed in through the functions class constructor.
+State can also be set/get by individual agents in the crew. This state is shared with all agents and functions if passed in through an AxFunction class constructor.
 
 ```javascript
-Planner.state.set('plan', 'some plan'); 
-console.log(Manager.state.getAll()); // { name: 'Crew1', location: 'Earth', plan: 'some plan' }
+Planner.state.set('plan', 'Fly to Mars'); 
+console.log(Manager.state.getAll()); // { name: 'Crew1', location: 'Earth', plan: 'Fly to Mars' }
 ```
 
 ## Completing a task
@@ -82,7 +81,7 @@ console.log(Manager.state.getAll()); // { name: 'Crew1', location: 'Earth', plan
 An example of how to complete a task using the agents is shown below. The `Planner` agent is used to plan the task, and the `Manager` agent is used to execute the task.
 
 ```javascript
-const userQuery = "i referred a friend to active and they were hired and started work on 1st july. But i did not receive my referral bonus. what amount should i have received?";
+const userQuery = "whats the square root of the number of days between now and Christmas";
 
 console.log(`\n\nQuestion: ${userQuery}`);
 
