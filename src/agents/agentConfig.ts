@@ -5,7 +5,7 @@ import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, A
 import type { AxAI, AxModelConfig, AxFunction, AxSignature } from '@ax-llm/ax';
 
 import { PROVIDER_API_KEYS } from '../config/index.js';
-import { functions as importedFunctions } from '../functions/index.js';
+import { AxCrewFunctions } from '../functions/index.js';
 
 // Define a mapping from provider names to their respective constructors
 const AIConstructors: Record<string, any> = {
@@ -28,9 +28,10 @@ type ExtendedAxModelConfig = AxModelConfig & {
 
 // Define a mapping from function names to their respective handlers
 type FunctionMap = {
-  [key: string]: AxFunction | { toFunction: () => AxFunction };
+  [key: string]: AxFunction | { new(state: Record<string, any>): { toFunction: () => AxFunction } };
 };
-const functions: FunctionMap = importedFunctions;
+
+const functions: FunctionMap = AxCrewFunctions;
 
 interface AgentConfig {
   name: string;
@@ -53,6 +54,17 @@ interface Agent {
   signature?: AxSignature;
   functions: AxFunction[];
   subAgentNames: string[];
+}
+
+/**
+ * Type guard to check if a value is a constructor function for a type T.
+ * 
+ * @template T - The type to check the constructor against.
+ * @param {any} func - The value to check.
+ * @returns {boolean} - True if the value is a constructor function for type T, false otherwise.
+ */
+function isConstructor<T>(func: any): func is { new (...args: any[]): T } {
+  return typeof func === 'function' && 'prototype' in func && 'toFunction' in func.prototype;
 }
 
 
@@ -85,7 +97,11 @@ const parseAgentConfig = (agentConfigFilePath: string): {crew: AgentConfig[]} =>
  * @throws {Error} Throws an error if the agent configuration is missing, the provider is unsupported,
  * the API key is not found, or the provider key name is not specified in the configuration.
  */
-const getAgentConfigParams = (agentName: string, agentConfigFilePath: string, state: Record<string, any>) => {
+const getAgentConfigParams = (
+  agentName: string, 
+  agentConfigFilePath: string, 
+  state: Record<string, any>
+) => {
   try{
     // Retrieve the parameters for the specified AI agent from a config file in yaml format
     const agentConfig = parseAgentConfig(agentConfigFilePath).crew.find(agent => agent.name === agentName);
@@ -135,7 +151,14 @@ const getAgentConfigParams = (agentName: string, agentConfigFilePath: string, st
         if (!func) {
           console.warn(`Warning: Function ${funcName} not found.`);
           return;
-        }        
+        }
+
+        // Use the type guard to check if the function is a class
+        if (isConstructor<{ toFunction: () => AxFunction }>(func)) {
+          return new func(state).toFunction();
+        }
+
+        // Else the function is a function handler, return it directly
         return func;
       })
       .filter(Boolean);

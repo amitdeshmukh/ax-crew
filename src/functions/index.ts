@@ -1,8 +1,8 @@
 import { CurrentDateTime, DaysBetweenDates } from './dateTime.js';
 
-const functions = {
+const AxCrewFunctions = {
   CurrentDateTime,
-  DaysBetweenDates
-}
+  DaysBetweenDates,
+};
 
-export { functions };
+export { AxCrewFunctions };

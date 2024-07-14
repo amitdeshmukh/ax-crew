@@ -10,7 +10,7 @@ interface AgentConfigParams {
   name: string;
   description: string;
   signature: AxSignature;
-  functions: (AxFunction | { toFunction: () => AxFunction; } | undefined)[];
+  functions: (AxFunction | (new (state: Record<string, any>) => { toFunction: () => AxFunction; }) | undefined)[];
   subAgentNames: string[];
 }
 
