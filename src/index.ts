@@ -1,7 +1,8 @@
 import { AxCrew } from './agents/index.js';
-import { AxCrewFunctions } from './functions/index.js';
+import { AxCrewFunctions, FunctionRegistryType } from './functions/index.js';
 
 export { 
   AxCrew,
-  AxCrewFunctions
+  AxCrewFunctions,
+  FunctionRegistryType
 };

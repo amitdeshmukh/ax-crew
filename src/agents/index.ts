@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AxAgent, AxAI } from '@ax-llm/ax';
 import type { AxSignature, AxAgentic, AxFunction } from '@ax-llm/ax';
 import { getAgentConfigParams } from './agentConfig.js';
+import { FunctionRegistryType } from '../functions/index.js'; 
 import { createState, StateInstance } from '../state/createState.js';
 
 // Define the interface for the agent configuration
@@ -17,6 +18,7 @@ interface AgentConfigParams {
 // Extend the AxAgent class to include shared state functionality
 class StatefulAxAgent extends AxAgent<any, any> {
   state: StateInstance;
+
   constructor(ai: AxAI, options: Readonly<{ name: string; description: string; signature: string | AxSignature; agents?: AxAgentic[] | undefined; functions?: (AxFunction | (() => AxFunction))[] | undefined; }>, state: StateInstance) {
     const formattedOptions = {
       ...options,
@@ -32,6 +34,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
  */
 class AxCrew {
   private configFilePath: string;
+  functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
   state: StateInstance;
@@ -41,8 +44,13 @@ class AxCrew {
    * @param {string} configFilePath - Path to the agent config file.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
-  constructor(configFilePath: string, crewId: string = uuidv4()) {
+  constructor(
+    configFilePath: string,
+    functionsRegistry: FunctionRegistryType = {},
+    crewId: string = uuidv4()
+  ) {
     this.configFilePath = configFilePath;
+    this.functionsRegistry = functionsRegistry;
     this.crewId = crewId;
     this.agents = new Map<string, StatefulAxAgent>();
     this.state = createState(crewId);
@@ -56,7 +64,12 @@ class AxCrew {
    */
   createAgent = (agentName: string): StatefulAxAgent => {
     try {
-      const agentConfigParams: AgentConfigParams = getAgentConfigParams(agentName, this.configFilePath, this.state);
+      const agentConfigParams: AgentConfigParams = getAgentConfigParams(
+        agentName, 
+        this.configFilePath,
+        this.functionsRegistry,
+        this.state
+      );
 
       // Destructure with type assertion
       const { 

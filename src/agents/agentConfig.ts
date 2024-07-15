@@ -2,10 +2,10 @@ import fs from 'fs';
 import yaml from 'js-yaml';
 
 import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether } from '@ax-llm/ax';
-import type { AxAI, AxModelConfig, AxFunction, AxSignature } from '@ax-llm/ax';
+import type { AxModelConfig, AxFunction, AxSignature } from '@ax-llm/ax';
 
 import { PROVIDER_API_KEYS } from '../config/index.js';
-import { AxCrewFunctions } from '../functions/index.js';
+import { FunctionRegistryType } from '../functions/index.js';
 
 // Define a mapping from provider names to their respective constructors
 const AIConstructors: Record<string, any> = {
@@ -26,13 +26,6 @@ type ExtendedAxModelConfig = AxModelConfig & {
   model: string;
 };
 
-// Define a mapping from function names to their respective handlers
-type FunctionMap = {
-  [key: string]: AxFunction | { new(state: Record<string, any>): { toFunction: () => AxFunction } };
-};
-
-const functions: FunctionMap = AxCrewFunctions;
-
 interface AgentConfig {
   name: string;
   description: string;
@@ -45,15 +38,6 @@ interface AgentConfig {
   options?: Record<string, any>;
   functions?: string[];
   agents?: string[];
-}
-
-interface Agent {
-  ai: AxAI;
-  name: string;
-  description: string;
-  signature?: AxSignature;
-  functions: AxFunction[];
-  subAgentNames: string[];
 }
 
 /**
@@ -99,7 +83,8 @@ const parseAgentConfig = (agentConfigFilePath: string): {crew: AgentConfig[]} =>
  */
 const getAgentConfigParams = (
   agentName: string, 
-  agentConfigFilePath: string, 
+  agentConfigFilePath: string,
+  functions: FunctionRegistryType,
   state: Record<string, any>
 ) => {
   try{
