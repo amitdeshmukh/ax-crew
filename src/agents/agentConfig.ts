@@ -76,6 +76,7 @@ const parseAgentConfig = (agentConfigFilePath: string): {crew: AgentConfig[]} =>
  *
  * @param {string} agentName - The identifier for the AI agent to be initialized.
  * @param {string} agentConfigFilePath - The file path to the YAML configuration for the agent.
+ * @param {FunctionRegistryType} functions - The functions available to the agent.
  * @param {Object} state - The state object for the agent.
  * @returns {Object} An object containing the Agents AI instance, its name, description, signature, functions and subAgentList.
  * @throws {Error} Throws an error if the agent configuration is missing, the provider is unsupported,

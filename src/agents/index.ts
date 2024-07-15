@@ -42,6 +42,7 @@ class AxCrew {
   /**
    * Creates an instance of AxCrew.
    * @param {string} configFilePath - Path to the agent config file.
+   * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
   constructor(
