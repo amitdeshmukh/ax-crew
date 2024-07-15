@@ -117,7 +117,7 @@ import { AxCrew, AxCrewFunctions } from '@amitdeshmukh/ax-crew';
 
 // Create a new instance of AxCrew
 const crew = new AxCrew('./agent_config.example.yaml', AxCrewFunctions);
-crew.addAgentsToCrew(['Planner', 'Manager']);
+crew.addAgentsToCrew(['Planner', 'Calculator', 'Manager']);
 
 // Get agent instances
 const Planner = crew.agents.get("Planner");
