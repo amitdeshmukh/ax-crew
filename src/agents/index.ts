@@ -3,7 +3,7 @@ import { AxAgent, AxAI } from '@ax-llm/ax';
 import type { AxSignature, AxAgentic, AxFunction } from '@ax-llm/ax';
 import { getAgentConfigParams } from './agentConfig.js';
 import { FunctionRegistryType } from '../functions/index.js'; 
-import { createState, StateInstance } from '../state/createState.js';
+import { createState, StateInstance } from '../state/index.js';
 
 // Define the interface for the agent configuration
 interface AgentConfigParams {
@@ -114,7 +114,7 @@ class AxCrew {
     if (this.agents && !this.agents.has(agentName)) {
       this.agents.set(agentName, this.createAgent(agentName));
     }
-  }  
+  }
 
   /**
    * Sets up agents in the crew by name.

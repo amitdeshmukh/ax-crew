@@ -3,13 +3,13 @@ crew:
 - name: Planner
   description: Creates a plan to complete a task
   signature: task:string "a task to be completed" -> plan:string "a plan to execute the task in 5 steps or less"
-  provider: anthropic
-  provider_key_name: ANTHROPIC_API_KEY
+  provider: google-gemini
+  provider_key_name: GEMINI_API_KEY
   ai:
-    model: claude-3-5-sonnet-20240620
+    model: gemini-1.5-flash
     temperature: 0
   options:
-    debug: true
+    debug: false
 
 - name: Calculator
   description: Solves math problems
@@ -26,10 +26,10 @@ crew:
 - name: Manager
   description: Answers questions from the user
   signature: question:string "a question from a user", plan:string "a suggested plan to answer the question" -> answer:string "the answer"
-  provider: anthropic
-  provider_key_name: ANTHROPIC_API_KEY
+  provider: openai
+  provider_key_name: OPENAI_API_KEY
   ai:
-    model: claude-3-5-sonnet-20240620
+    model: gpt-4o-mini
     temperature: 0
   options:
     debug: true
