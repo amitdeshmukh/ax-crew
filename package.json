@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@amitdeshmukh/ax-crew",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "Build and launch a crew of AI agents with shared state. Built with axllm.dev",
   "main": "dist/index.js",
   "engines": {
@@ -14,10 +14,11 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "js-yaml": "^4.1.0",
+    "upgrade": "^1.1.0",
     "uuid": "^10.0.0"
   },
   "peerDependencies": {
-    "@ax-llm/ax": "^9.0.23"
+    "@ax-llm/ax": "^9.0.61"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
