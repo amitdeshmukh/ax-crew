@@ -12,8 +12,15 @@ This repo simplifies development of [AxLLM](https://axllm.dev) AI Agents by usin
 ## Getting Started
 
 ### Installation
+Install this package:
 ```bash
 npm install @amitdeshmukh/ax-crew
+```
+AxLLM is a peer dependency, so you will need to install it separately.
+
+**Note:** We currently support AxLLM version 9.0.23. We're working on supporting the latest version of AxLLM.
+```bash
+npm install @ax-llm/ax@9.0.23
 ```
 
 ### Environment Setup
