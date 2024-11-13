@@ -1,9 +1,14 @@
-import { v4 as uuidv4 } from 'uuid';
-import { AxAgent, AxAI } from '@ax-llm/ax';
-import type { AxSignature, AxAgentic, AxFunction } from '@ax-llm/ax';
-import { getAgentConfigParams } from './agentConfig.js';
-import { FunctionRegistryType } from '../functions/index.js'; 
-import { createState, StateInstance } from '../state/index.js';
+import { v4 as uuidv4 } from "uuid";
+import { AxAgent, AxAI } from "@ax-llm/ax";
+import type {
+  AxSignature,
+  AxAgentic,
+  AxFunction,
+  AxProgramForwardOptions,
+} from "@ax-llm/ax";
+import { getAgentConfigParams } from "./agentConfig.js";
+import { FunctionRegistryType } from "../functions/index.js";
+import { createState, StateInstance } from "../state/index.js";
 
 // Define the interface for the agent configuration
 interface AgentConfigParams {
@@ -11,21 +16,45 @@ interface AgentConfigParams {
   name: string;
   description: string;
   signature: AxSignature;
-  functions: (AxFunction | (new (state: Record<string, any>) => { toFunction: () => AxFunction; }) | undefined)[];
+  functions: (
+    | AxFunction
+    | (new (state: Record<string, any>) => { toFunction: () => AxFunction })
+    | undefined
+  )[];
   subAgentNames: string[];
 }
 
 // Extend the AxAgent class to include shared state functionality
 class StatefulAxAgent extends AxAgent<any, any> {
   state: StateInstance;
+  axai: any;
 
-  constructor(ai: AxAI, options: Readonly<{ name: string; description: string; signature: string | AxSignature; agents?: AxAgentic[] | undefined; functions?: (AxFunction | (() => AxFunction))[] | undefined; }>, state: StateInstance) {
+  constructor(
+    ai: AxAI,
+    options: Readonly<{
+      name: string;
+      description: string;
+      signature: string | AxSignature;
+      agents?: AxAgentic[] | undefined;
+      functions?: (AxFunction | (() => AxFunction))[] | undefined;
+    }>,
+    state: StateInstance
+  ) {
     const formattedOptions = {
       ...options,
-      functions: options.functions?.map(fn => typeof fn === 'function' ? fn() : fn) as AxFunction[] | undefined
+      functions: options.functions?.map((fn) =>
+        typeof fn === "function" ? fn() : fn
+      ) as AxFunction[] | undefined,
     };
-    super(ai, formattedOptions);
+    super(formattedOptions);
     this.state = state;
+    this.axai = ai;
+  }
+  async forward(
+    input: Record<string, any>,
+    options?: Readonly<AxProgramForwardOptions>
+  ): Promise<Record<string, any>> {
+    return super.forward(this.axai, input, options);
   }
 }
 
@@ -66,39 +95,43 @@ class AxCrew {
   createAgent = (agentName: string): StatefulAxAgent => {
     try {
       const agentConfigParams: AgentConfigParams = getAgentConfigParams(
-        agentName, 
+        agentName,
         this.configFilePath,
         this.functionsRegistry,
         this.state
       );
 
       // Destructure with type assertion
-      const { 
-        ai, 
-        name, 
-        description, 
-        signature, 
-        functions,
-        subAgentNames
-      } = agentConfigParams;
+      const { ai, name, description, signature, functions, subAgentNames } =
+        agentConfigParams;
 
       // Get subagents for the AI agent
       const subAgents = subAgentNames.map((subAgentName: string) => {
         if (!this.agents?.get(subAgentName)) {
-          throw new Error(`Sub-agent '${subAgentName}' does not exist in available agents.`);
+          throw new Error(
+            `Sub-agent '${subAgentName}' does not exist in available agents.`
+          );
         }
         return this.agents?.get(subAgentName);
       });
 
       // Create an instance of StatefulAxAgent
-      const agent = new StatefulAxAgent(ai, {
-        name,
-        description,
-        signature,
-        functions: functions.filter((fn): fn is AxFunction => fn !== undefined),
-        agents: subAgents.filter((agent): agent is StatefulAxAgent => agent !== undefined)
-      }, this.state);
-      
+      const agent = new StatefulAxAgent(
+        ai,
+        {
+          name,
+          description,
+          signature,
+          functions: functions.filter(
+            (fn): fn is AxFunction => fn !== undefined
+          ),
+          agents: subAgents.filter(
+            (agent): agent is StatefulAxAgent => agent !== undefined
+          ),
+        },
+        this.state
+      );
+
       return agent;
     } catch (error) {
       console.error(`Failed to create agent '${agentName}':`, error);
@@ -124,7 +157,7 @@ class AxCrew {
    * @returns {Map<string, StatefulAxAgent> | null} A map of agent names to their corresponding instances.
    */
   addAgentsToCrew(agentNames: string[]): Map<string, StatefulAxAgent> | null {
-    agentNames.forEach(agentName => {
+    agentNames.forEach((agentName) => {
       this.addAgent(agentName);
     });
     return this.agents;
@@ -136,7 +169,7 @@ class AxCrew {
   destroy() {
     this.agents = null;
     this.state.reset();
-  }  
+  }
 }
 
 export { AxCrew };
