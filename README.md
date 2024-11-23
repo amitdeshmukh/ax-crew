@@ -18,9 +18,8 @@ npm install @amitdeshmukh/ax-crew
 ```
 AxLLM is a peer dependency, so you will need to install it separately.
 
-**Note:** We currently support AxLLM version 9.0.23. We're working on supporting the latest version of AxLLM.
 ```bash
-npm install @ax-llm/ax@9.0.23
+npm install @ax-llm/ax@latest
 ```
 
 ### Environment Setup
@@ -146,3 +145,7 @@ const answer = managerResponse.answer;
 console.log(`\n\nPlan: ${plan}`);
 console.log(`\n\nAnswer: ${answer}`);
 ```
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version updates.

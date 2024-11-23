@@ -26,5 +26,13 @@
     "@types/uuid": "^10.0.0",
     "typescript": "^5.5.3"
   },
+  "homepage": "https://github.com/amitdeshmukh/ax-crew#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amitdeshmukh/ax-crew.git"
+  },
+  "bugs": {
+    "url": "https://github.com/amitdeshmukh/ax-crew/issues"
+  },  
   "license": "MIT"
 }

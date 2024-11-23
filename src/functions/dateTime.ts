@@ -5,10 +5,25 @@ export const CurrentDateTime: AxFunction = {
   description: 'Get the current date and time.',
   parameters: {
     type: 'object',
-    properties: {},
-    required: []
+    properties: {
+      format: {
+        type: 'string',
+        description: 'The format of the date and time to return.',
+        enum: ['iso', 'datetime', 'date']
+      }
+    }
   },
-  func: () => new Date().toISOString()
+  func: ({ format }: { format: string }) => {
+    const now = new Date();
+    switch (format) {
+      case 'datetime':
+        return now.toLocaleString();
+      case 'date':
+        return now.toLocaleDateString();
+      default:
+        return now.toISOString();
+    }
+  }
 }
 
 export const DaysBetweenDates: AxFunction = {
@@ -19,11 +34,11 @@ export const DaysBetweenDates: AxFunction = {
     properties: {
       startDate: { 
         type: 'string',
-        description: 'The start date in ISO format.'
+        description: 'The start date in ISO format. Must be on or before the end date.'
       },
       endDate: {
         type: 'string',
-        description: 'The end date in ISO format.'
+        description: 'The end date in ISO format. Must be on or after the start date.'
       }
     },
     required: ['startDate', 'endDate']
