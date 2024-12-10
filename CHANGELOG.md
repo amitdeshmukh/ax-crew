@@ -5,6 +5,17 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.2.0] - 2024-12-10
+
+### Added
+- Support for agent examples through the `examples` field in agent configuration
+- Examples can be used to guide agent behavior and response format
+- Documentation for using examples in README.md
+
+### Enhanced
+- Agent responses now better follow example patterns when provided
+- Improved consistency in agent outputs through example-based learning
+
 ## [3.1.0] - 2024-12-10
 
 ### Added

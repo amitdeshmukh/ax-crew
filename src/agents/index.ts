@@ -23,6 +23,7 @@ interface AgentConfigParams {
     | undefined
   )[];
   subAgentNames: string[];
+  examples?: Array<Record<string, any>>;
 }
 
 // Extend the AxAgent class to include shared state functionality
@@ -38,18 +39,25 @@ class StatefulAxAgent extends AxAgent<any, any> {
       signature: string | AxSignature;
       agents?: AxAgentic[] | undefined;
       functions?: (AxFunction | (() => AxFunction))[] | undefined;
+      examples?: Array<Record<string, any>> | undefined;
     }>,
     state: StateInstance
   ) {
+    const { examples, ...restOptions } = options;
     const formattedOptions = {
-      ...options,
-      functions: options.functions?.map((fn) =>
+      ...restOptions,
+      functions: restOptions.functions?.map((fn) =>
         typeof fn === "function" ? fn() : fn
       ) as AxFunction[] | undefined,
     };
     super(formattedOptions);
     this.state = state;
     this.axai = ai;
+
+    // Set examples if provided
+    if (examples && examples.length > 0) {
+      this.setExamples(examples);
+    }
   }
   async forward(
     input: Record<string, any>,
@@ -103,7 +111,7 @@ class AxCrew {
       );
 
       // Destructure with type assertion
-      const { ai, name, description, signature, functions, subAgentNames } =
+      const { ai, name, description, signature, functions, subAgentNames, examples } =
         agentConfigParams;
 
       // Get subagents for the AI agent
@@ -129,6 +137,7 @@ class AxCrew {
           agents: subAgents.filter(
             (agent): agent is StatefulAxAgent => agent !== undefined
           ),
+          examples,
         },
         this.state
       );

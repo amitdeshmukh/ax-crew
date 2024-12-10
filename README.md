@@ -87,6 +87,45 @@ Both methods support the same configuration structure and options. Choose the on
   - Modify configurations at runtime
   - Keep everything in one file for simpler projects
 
+### Agent Examples
+You can provide examples to guide the behavior of your agents using the `examples` field in the agent configuration. Examples help the agent understand the expected input/output format and improve its responses.
+
+```javascript
+{
+  "name": "MathTeacher",
+  "description": "Solves math problems with step by step explanations",
+  "signature": "problem:string \"a math problem to solve\" -> solution:string \"step by step solution with final answer\"",
+  "provider": "google-gemini",
+  "providerKeyName": "GEMINI_API_KEY",
+  "ai": {
+    "model": "gemini-1.5-pro",
+    "temperature": 0
+  },
+  "examples": [
+    {
+      "problem": "what is the square root of 144?",
+      "solution": "Let's solve this step by step:\n1. The square root of a number is a value that, when multiplied by itself, gives the original number\n2. For 144, we need to find a number that when multiplied by itself equals 144\n3. 12 × 12 = 144\nTherefore, the square root of 144 is 12"
+    },
+    {
+      "problem": "what is the cube root of 27?",
+      "solution": "Let's solve this step by step:\n1. The cube root of a number is a value that, when multiplied by itself twice, gives the original number\n2. For 27, we need to find a number that when cubed equals 27\n3. 3 × 3 × 3 = 27\nTherefore, the cube root of 27 is 3"
+    }
+  ]
+}
+```
+
+The examples should:
+- Match the input/output signature of your agent
+- Demonstrate the desired format and style of responses
+- Include edge cases or specific patterns you want the agent to learn
+- Be clear and concise while showing the expected behavior
+
+Examples are particularly useful for:
+- Teaching agents specific response formats
+- Demonstrating step-by-step problem-solving approaches
+- Showing how to handle edge cases
+- Maintaining consistent output styles across responses
+
 ### Function Registry
 Functions (aka Tools) are the building blocks of agents. They are used to perform specific tasks, such as calling external APIs, databases, or other services.
 

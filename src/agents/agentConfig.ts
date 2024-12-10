@@ -36,6 +36,7 @@ interface AgentConfig {
   options?: Record<string, any>;
   functions?: string[];
   agents?: string[];
+  examples?: Array<Record<string, any>>;
 }
 
 /**
@@ -214,7 +215,8 @@ const getAgentConfigParams = (
       description: agentConfigData.description,
       signature: agentConfigData.signature,
       functions: agentFunctions,
-      subAgentNames: agentConfigData.agents || []
+      subAgentNames: agentConfigData.agents || [],
+      examples: agentConfigData.examples || []
     };
   } catch (error) {
     if (error instanceof Error) {
