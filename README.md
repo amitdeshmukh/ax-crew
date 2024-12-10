@@ -229,6 +229,30 @@ console.log(`\n\nPlan: ${plan}`);
 console.log(`\n\nAnswer: ${answer}`);
 ```
 
+### Tracking Usage Costs
+
+You can track the usage costs for each agent's execution using the `getUsageCost` method. This is particularly useful for monitoring API costs and usage patterns.
+
+```javascript
+// After running an agent's forward method
+const response = await Planner.forward({ task: userQuery });
+const cost = Planner.getUsageCost();
+
+console.log(cost);
+/* Output example:
+{
+  promptCost: 0.00036375,
+  completionCost: 0.00061,
+  totalCost: 0.00097375,
+  tokenMetrics: {
+    promptTokens: 291,
+    completionTokens: 122,
+    totalTokens: 413
+  }
+}
+*/
+```
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version updates.

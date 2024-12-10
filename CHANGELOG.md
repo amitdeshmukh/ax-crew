@@ -5,6 +5,14 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.3.0] - 2024-12-11
+
+### Added
+- Added `getUsageCost` method to track API usage costs and token metrics
+- Cost tracking includes prompt cost, completion cost, and total cost
+- Detailed token metrics for prompt, completion, and total tokens
+- Documentation and examples for usage cost tracking in README.md
+
 ## [3.2.0] - 2024-12-10
 
 ### Added

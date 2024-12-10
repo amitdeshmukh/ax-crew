@@ -10,6 +10,7 @@ import { getAgentConfigParams } from "./agentConfig.js";
 import type { AgentConfigInput } from "./agentConfig.js";
 import { FunctionRegistryType } from "../functions/index.js";
 import { createState, StateInstance } from "../state/index.js";
+import { StateFulAxAgentUsage } from "./agentUseCosts.js";
 
 // Define the interface for the agent configuration
 interface AgentConfigParams {
@@ -59,12 +60,27 @@ class StatefulAxAgent extends AxAgent<any, any> {
       this.setExamples(examples);
     }
   }
+
+  // Override the forward method
   async forward(
     input: Record<string, any>,
     options?: Readonly<AxProgramForwardOptions>
   ): Promise<Record<string, any>> {
     return super.forward(this.axai, input, options);
   }
+
+  // Get the usage cost for a run of the agent
+  getUsageCost() {
+    const { modelUsage, modelInfo, models } = this.axai;
+    const currentModelInfo = modelInfo?.find((m: { name: string }) => m.name === models.model);
+    
+    if (!currentModelInfo || !modelUsage) {
+      return null;
+    }
+
+    return StateFulAxAgentUsage.calculateCost(modelUsage, currentModelInfo);
+  }
+
 }
 
 /**
