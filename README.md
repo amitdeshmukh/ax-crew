@@ -5,7 +5,7 @@
 This repo simplifies development of [AxLLM](https://axllm.dev) AI Agents by using config to instantiate agents. This means you can write a library of functions, and quickly invoke AI agents to use them using a simple configuration file.
 
 ## Features
-- **Crew Configuration**: Define a crew of agents in a YAML file. (see [agent_config.example.yaml](agent_config.example.yaml))
+- **Crew Configuration**: Define a crew of agents in a JSON file. (see [agentConfig.json](agentConfig.json) as an example)
 - **State Management**: Share state across agents in a crew, as well as with functions used by those agents.
 - **Task Execution**: Plan and execute tasks using agents in the crew.
 
@@ -28,20 +28,103 @@ Refer to the [.env.example](.env.example) file for the required environment vari
 ## Usage
 
 ### Initializing a Crew
-A Crew is a team of agents that work together to achieve a common goal. The configuration file for a crew is a YAML file that defines the agents in the crew, along with their individual configurations.
+A Crew is a team of agents that work together to achieve a common goal. You can configure your crew in two ways:
 
-See [agent_config.example.yaml](agent_config.example.yaml) for an example.
+1. Using a JSON configuration file that defines the agents in the crew, along with their individual configurations.
+2. Directly passing a JSON object with the crew configuration.
 
-To initialize a crew of agents, pass a config file to the `AxCrew` constructor.
+#### Using a Configuration File
+See [agentConfig.json](agentConfig.json) for an example configuration file.
 
 ```javascript
 // Import the AxCrew class
 import { AxCrew } from '@amitdeshmukh/ax-crew';
 
-// Create a new instance of AxCrew
-const configFilePath = './agent_config.example.yaml';
+// Create a new instance of AxCrew using a config file
+const configFilePath = './agentConfig.json';
 const crew = new AxCrew(configFilePath);
 ```
+
+#### Using a Direct Configuration Object
+You can also pass the configuration directly as a JSON object:
+
+```javascript
+// Import the AxCrew class
+import { AxCrew } from '@amitdeshmukh/ax-crew';
+
+// Create the configuration object
+const config = {
+  crew: [
+    {
+      name: "Planner",
+      description: "Creates a plan to complete a task",
+      signature: "task:string \"a task to be completed\" -> plan:string \"a plan to execute the task in 5 steps or less\"",
+      provider: "google-gemini",
+      providerKeyName: "GEMINI_API_KEY",
+      ai: {
+        model: "gemini-1.5-flash",
+        temperature: 0
+      },
+      options: {
+        debug: false
+      }
+    }
+    // ... more agents
+  ]
+};
+
+// Create a new instance of AxCrew using the config object
+const crew = new AxCrew(config);
+```
+
+Both methods support the same configuration structure and options. Choose the one that best fits your use case:
+- Use a configuration file when you want to:
+  - Keep your configuration separate from your code
+  - Share configurations across different projects
+  - Version control your configurations
+- Use a direct configuration object when you want to:
+  - Generate configurations dynamically
+  - Modify configurations at runtime
+  - Keep everything in one file for simpler projects
+
+### Agent Examples
+You can provide examples to guide the behavior of your agents using the `examples` field in the agent configuration. Examples help the agent understand the expected input/output format and improve its responses.
+
+```javascript
+{
+  "name": "MathTeacher",
+  "description": "Solves math problems with step by step explanations",
+  "signature": "problem:string \"a math problem to solve\" -> solution:string \"step by step solution with final answer\"",
+  "provider": "google-gemini",
+  "providerKeyName": "GEMINI_API_KEY",
+  "ai": {
+    "model": "gemini-1.5-pro",
+    "temperature": 0
+  },
+  "examples": [
+    {
+      "problem": "what is the square root of 144?",
+      "solution": "Let's solve this step by step:\n1. The square root of a number is a value that, when multiplied by itself, gives the original number\n2. For 144, we need to find a number that when multiplied by itself equals 144\n3. 12 × 12 = 144\nTherefore, the square root of 144 is 12"
+    },
+    {
+      "problem": "what is the cube root of 27?",
+      "solution": "Let's solve this step by step:\n1. The cube root of a number is a value that, when multiplied by itself twice, gives the original number\n2. For 27, we need to find a number that when cubed equals 27\n3. 3 × 3 × 3 = 27\nTherefore, the cube root of 27 is 3"
+    }
+  ]
+}
+```
+
+The examples should:
+- Match the input/output signature of your agent
+- Demonstrate the desired format and style of responses
+- Include edge cases or specific patterns you want the agent to learn
+- Be clear and concise while showing the expected behavior
+
+Examples are particularly useful for:
+- Teaching agents specific response formats
+- Demonstrating step-by-step problem-solving approaches
+- Showing how to handle edge cases
+- Maintaining consistent output styles across responses
 
 ### Function Registry
 Functions (aka Tools) are the building blocks of agents. They are used to perform specific tasks, such as calling external APIs, databases, or other services.
@@ -122,7 +205,7 @@ An example of how to complete a task using the agents is shown below. The `Plann
 import { AxCrew, AxCrewFunctions } from '@amitdeshmukh/ax-crew';
 
 // Create a new instance of AxCrew
-const crew = new AxCrew('./agent_config.example.yaml', AxCrewFunctions);
+const crew = new AxCrew('./agentConfig.json', AxCrewFunctions);
 crew.addAgentsToCrew(['Planner', 'Calculator', 'Manager']);
 
 // Get agent instances

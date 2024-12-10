@@ -7,6 +7,7 @@ import type {
   AxProgramForwardOptions,
 } from "@ax-llm/ax";
 import { getAgentConfigParams } from "./agentConfig.js";
+import type { AgentConfigInput } from "./agentConfig.js";
 import { FunctionRegistryType } from "../functions/index.js";
 import { createState, StateInstance } from "../state/index.js";
 
@@ -22,6 +23,7 @@ interface AgentConfigParams {
     | undefined
   )[];
   subAgentNames: string[];
+  examples?: Array<Record<string, any>>;
 }
 
 // Extend the AxAgent class to include shared state functionality
@@ -37,18 +39,25 @@ class StatefulAxAgent extends AxAgent<any, any> {
       signature: string | AxSignature;
       agents?: AxAgentic[] | undefined;
       functions?: (AxFunction | (() => AxFunction))[] | undefined;
+      examples?: Array<Record<string, any>> | undefined;
     }>,
     state: StateInstance
   ) {
+    const { examples, ...restOptions } = options;
     const formattedOptions = {
-      ...options,
-      functions: options.functions?.map((fn) =>
+      ...restOptions,
+      functions: restOptions.functions?.map((fn) =>
         typeof fn === "function" ? fn() : fn
       ) as AxFunction[] | undefined,
     };
     super(formattedOptions);
     this.state = state;
     this.axai = ai;
+
+    // Set examples if provided
+    if (examples && examples.length > 0) {
+      this.setExamples(examples);
+    }
   }
   async forward(
     input: Record<string, any>,
@@ -62,7 +71,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
  * Represents a crew of agents with shared state functionality.
  */
 class AxCrew {
-  private configFilePath: string;
+  private agentConfig: AgentConfigInput;
   functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
@@ -70,16 +79,16 @@ class AxCrew {
 
   /**
    * Creates an instance of AxCrew.
-   * @param {string} configFilePath - Path to the agent config file.
+   * @param {AgentConfigInput} agentConfig - Either a path to the agent config file or a JSON object with crew configuration.
    * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
   constructor(
-    configFilePath: string,
+    agentConfig: AgentConfigInput,
     functionsRegistry: FunctionRegistryType = {},
     crewId: string = uuidv4()
   ) {
-    this.configFilePath = configFilePath;
+    this.agentConfig = agentConfig;
     this.functionsRegistry = functionsRegistry;
     this.crewId = crewId;
     this.agents = new Map<string, StatefulAxAgent>();
@@ -96,13 +105,13 @@ class AxCrew {
     try {
       const agentConfigParams: AgentConfigParams = getAgentConfigParams(
         agentName,
-        this.configFilePath,
+        this.agentConfig,
         this.functionsRegistry,
         this.state
       );
 
       // Destructure with type assertion
-      const { ai, name, description, signature, functions, subAgentNames } =
+      const { ai, name, description, signature, functions, subAgentNames, examples } =
         agentConfigParams;
 
       // Get subagents for the AI agent
@@ -128,13 +137,13 @@ class AxCrew {
           agents: subAgents.filter(
             (agent): agent is StatefulAxAgent => agent !== undefined
           ),
+          examples,
         },
         this.state
       );
 
       return agent;
     } catch (error) {
-      console.error(`Failed to create agent '${agentName}':`, error);
       throw error;
     }
   };
@@ -144,8 +153,13 @@ class AxCrew {
    * @param {string} agentName - The name of the agent to add.
    */
   addAgent(agentName: string): void {
-    if (this.agents && !this.agents.has(agentName)) {
-      this.agents.set(agentName, this.createAgent(agentName));
+    try {
+      if (this.agents && !this.agents.has(agentName)) {
+        this.agents.set(agentName, this.createAgent(agentName));
+      }
+    } catch (error) {
+      console.error(`Failed to create agent '${agentName}':`);
+      throw error;
     }
   }
 
@@ -157,10 +171,14 @@ class AxCrew {
    * @returns {Map<string, StatefulAxAgent> | null} A map of agent names to their corresponding instances.
    */
   addAgentsToCrew(agentNames: string[]): Map<string, StatefulAxAgent> | null {
-    agentNames.forEach((agentName) => {
-      this.addAgent(agentName);
-    });
-    return this.agents;
+    try {
+      agentNames.forEach((agentName) => {
+        this.addAgent(agentName);
+      });
+      return this.agents;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
