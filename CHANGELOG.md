@@ -5,6 +5,17 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.1.0] - 2024-12-10
+
+### Added
+- Support for direct JSON object configuration in addition to configuration files
+- New configuration option to pass agent configuration as a JavaScript object
+- Updated documentation in README.md with examples of both configuration methods
+
+### Enhanced
+- Configuration flexibility allowing runtime configuration modifications
+- Support for dynamic agent configuration generation
+
 ## [3.0.0] - 2024-12-10
 
 ### Changed

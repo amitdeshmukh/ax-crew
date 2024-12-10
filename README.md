@@ -28,20 +28,64 @@ Refer to the [.env.example](.env.example) file for the required environment vari
 ## Usage
 
 ### Initializing a Crew
-A Crew is a team of agents that work together to achieve a common goal. The configuration file for a crew is a YAML file that defines the agents in the crew, along with their individual configurations.
+A Crew is a team of agents that work together to achieve a common goal. You can configure your crew in two ways:
 
-See [agentConfig.json](agentConfig.json) for an example.
+1. Using a JSON configuration file that defines the agents in the crew, along with their individual configurations.
+2. Directly passing a JSON object with the crew configuration.
 
-To initialize a crew of agents, pass a config file to the `AxCrew` constructor.
+#### Using a Configuration File
+See [agentConfig.json](agentConfig.json) for an example configuration file.
 
 ```javascript
 // Import the AxCrew class
 import { AxCrew } from '@amitdeshmukh/ax-crew';
 
-// Create a new instance of AxCrew
+// Create a new instance of AxCrew using a config file
 const configFilePath = './agentConfig.json';
 const crew = new AxCrew(configFilePath);
 ```
+
+#### Using a Direct Configuration Object
+You can also pass the configuration directly as a JSON object:
+
+```javascript
+// Import the AxCrew class
+import { AxCrew } from '@amitdeshmukh/ax-crew';
+
+// Create the configuration object
+const config = {
+  crew: [
+    {
+      name: "Planner",
+      description: "Creates a plan to complete a task",
+      signature: "task:string \"a task to be completed\" -> plan:string \"a plan to execute the task in 5 steps or less\"",
+      provider: "google-gemini",
+      providerKeyName: "GEMINI_API_KEY",
+      ai: {
+        model: "gemini-1.5-flash",
+        temperature: 0
+      },
+      options: {
+        debug: false
+      }
+    }
+    // ... more agents
+  ]
+};
+
+// Create a new instance of AxCrew using the config object
+const crew = new AxCrew(config);
+```
+
+Both methods support the same configuration structure and options. Choose the one that best fits your use case:
+- Use a configuration file when you want to:
+  - Keep your configuration separate from your code
+  - Share configurations across different projects
+  - Version control your configurations
+- Use a direct configuration object when you want to:
+  - Generate configurations dynamically
+  - Modify configurations at runtime
+  - Keep everything in one file for simpler projects
 
 ### Function Registry
 Functions (aka Tools) are the building blocks of agents. They are used to perform specific tasks, such as calling external APIs, databases, or other services.

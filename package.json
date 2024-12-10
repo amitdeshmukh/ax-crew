@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@amitdeshmukh/ax-crew",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Build and launch a crew of AI agents with shared state. Built with axllm.dev",
   "main": "dist/index.js",
   "engines": {
