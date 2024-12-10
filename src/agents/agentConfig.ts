@@ -1,6 +1,4 @@
 import fs from 'fs';
-import yaml from 'js-yaml';
-
 import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether } from '@ax-llm/ax';
 import type { AxModelConfig, AxFunction, AxSignature } from '@ax-llm/ax';
 
@@ -31,7 +29,7 @@ interface AgentConfig {
   description: string;
   signature: AxSignature;
   provider: string;
-  provider_key_name?: string;
+  providerKeyName?: string;
   ai: ExtendedAxModelConfig;
   debug?: boolean;
   apiURL?: string;
@@ -51,6 +49,53 @@ function isConstructor<T>(func: any): func is { new (...args: any[]): T } {
   return typeof func === 'function' && 'prototype' in func && 'toFunction' in func.prototype;
 }
 
+/**
+ * Provides a user-friendly error message for JSON parsing errors
+ */
+const getFormattedJSONError = (error: Error, fileContents: string): string => {
+  if (error instanceof SyntaxError) {
+    const match = error.message.match(/position (\d+)/);
+    const position = match ? parseInt(match[1]) : -1;
+    
+    if (position !== -1) {
+      const lines = fileContents.split('\n');
+      let currentPos = 0;
+      let errorLine = 0;
+      let errorColumn = 0;
+
+      // Find the line and column of the error
+      for (let i = 0; i < lines.length; i++) {
+        if (currentPos + lines[i].length >= position) {
+          errorLine = i + 1;
+          errorColumn = position - currentPos + 1;
+          break;
+        }
+        currentPos += lines[i].length + 1; // +1 for the newline character
+      }
+
+      const contextLines = lines.slice(Math.max(0, errorLine - 3), errorLine + 2)
+        .map((line, idx) => `${errorLine - 2 + idx}:  ${line}`).join('\n');
+
+      return `JSON Parse Error in your agent configuration:
+      
+Error near line ${errorLine}, column ${errorColumn}
+
+Context:
+${contextLines}
+
+Common issues to check:
+- Missing or extra commas between properties
+- Missing quotes around property names
+- Unmatched brackets or braces
+- Invalid JSON values
+- Trailing commas (not allowed in JSON)
+
+Original error: ${error.message}`;
+    }
+  }
+  
+  return `Error parsing agent configuration: ${error.message}`;
+};
 
 /**
  * Reads the AI parameters from the YAML configuration file.
@@ -61,10 +106,13 @@ function isConstructor<T>(func: any): func is { new (...args: any[]): T } {
 const parseAgentConfig = (agentConfigFilePath: string): {crew: AgentConfig[]} => {
   try {
     const fileContents = fs.readFileSync(agentConfigFilePath, 'utf8');
-    const parsedConfigs = yaml.load(fileContents) as { crew: AgentConfig[] };
+    const parsedConfigs = JSON.parse(fileContents) as { crew: AgentConfig[] };
     return parsedConfigs;
   } catch (e) {
-    console.error('Error reading agent config file:', e);
+    if (e instanceof Error) {
+      const formattedError = getFormattedJSONError(e, fs.readFileSync(agentConfigFilePath, 'utf8'));
+      throw new Error(formattedError);
+    }
     throw e;
   }
 };
@@ -88,7 +136,7 @@ const getAgentConfigParams = (
   functions: FunctionRegistryType,
   state: Record<string, any>
 ) => {
-  try{
+  try {
     // Retrieve the parameters for the specified AI agent from a config file in yaml format
     const agentConfig = parseAgentConfig(agentConfigFilePath).crew.find(agent => agent.name === agentName);
     if (!agentConfig) {
@@ -103,8 +151,8 @@ const getAgentConfigParams = (
 
     // If an API Key property is present, get the API key for the AI agent from the environment variables
     let apiKey = '';
-    if (agentConfig.provider_key_name) {
-      apiKey = PROVIDER_API_KEYS[agentConfig.provider_key_name] || '';
+    if (agentConfig.providerKeyName) {
+      apiKey = PROVIDER_API_KEYS[agentConfig.providerKeyName] || '';
 
       if (!apiKey) {
         throw new Error(`API key for provider ${agentConfig.provider} is not set in environment variables`);
@@ -159,8 +207,10 @@ const getAgentConfigParams = (
       subAgentNames: agentConfig.agents || []
     };
   } catch (error) {
-    console.error(error);
-    throw new Error(`Error setting up AI agent`);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(`Error setting up AI agent: ${error}`);
   }
 };
 

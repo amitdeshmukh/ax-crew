@@ -1,0 +1,65 @@
+{
+  "crew": [
+    {
+      "name": "Planner",
+      "description": "Creates a plan to complete a task",
+      "signature": "task:string \"a task to be completed\" -> plan:string \"a plan to execute the task in 5 steps or less\"",
+      "provider": "google-gemini",
+      "providerKeyName": "GEMINI_API_KEY",
+      "ai": {
+        "model": "gemini-1.5-flash",
+        "temperature": 0
+      },
+      "options": {
+        "debug": false
+      }
+    },
+    {
+      "name": "Calculator",
+      "description": "Solves math problems",
+      "signature": "mathProblem:string \"a math problem to be solved using Python code\" -> solution:string \"the solution to the math problem\"",
+      "provider": "google-gemini",
+      "providerKeyName": "GEMINI_API_KEY",
+      "ai": {
+        "model": "gemini-1.5-pro",
+        "temperature": 0
+      },
+      "options": {
+        "debug": true,
+        "codeExecution": true
+      },
+      "functions": ["CurrentDateTime", "DaysBetweenDates"]
+    },
+    {
+      "name": "WebSearch",
+      "description": "Searches the web for the latest information using Google search",
+      "signature": "webSearchQuery:string \"a query for Google search\" -> webSearchResponse:string \"the result of the search\"",
+      "provider": "google-gemini",
+      "providerKeyName": "GEMINI_API_KEY",
+      "ai": {
+        "model": "gemini-1.5-pro",
+        "temperature": 0
+      },
+      "options": {
+        "debug": true,
+        "googleSearchRetrieval": true
+      },
+      "functions": ["CurrentDateTime", "DaysBetweenDates"]
+    },
+    {
+      "name": "Manager",
+      "description": "Answers questions from the user",
+      "signature": "question:string \"a question from a user\", plan:string \"a suggested plan to answer the question\" -> answer:string \"the answer\"",
+      "provider": "openai",
+      "providerKeyName": "OPENAI_API_KEY",
+      "ai": {
+        "model": "gpt-4o-mini",
+        "temperature": 0
+      },
+      "options": {
+        "debug": true
+      },
+      "functions": ["CurrentDateTime", "DaysBetweenDates"]
+    }
+  ]
+}

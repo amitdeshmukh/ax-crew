@@ -134,7 +134,6 @@ class AxCrew {
 
       return agent;
     } catch (error) {
-      console.error(`Failed to create agent '${agentName}':`, error);
       throw error;
     }
   };
@@ -144,8 +143,13 @@ class AxCrew {
    * @param {string} agentName - The name of the agent to add.
    */
   addAgent(agentName: string): void {
-    if (this.agents && !this.agents.has(agentName)) {
-      this.agents.set(agentName, this.createAgent(agentName));
+    try {
+      if (this.agents && !this.agents.has(agentName)) {
+        this.agents.set(agentName, this.createAgent(agentName));
+      }
+    } catch (error) {
+      console.error(`Failed to create agent '${agentName}':`);
+      throw error;
     }
   }
 
@@ -157,10 +161,14 @@ class AxCrew {
    * @returns {Map<string, StatefulAxAgent> | null} A map of agent names to their corresponding instances.
    */
   addAgentsToCrew(agentNames: string[]): Map<string, StatefulAxAgent> | null {
-    agentNames.forEach((agentName) => {
-      this.addAgent(agentName);
-    });
-    return this.agents;
+    try {
+      agentNames.forEach((agentName) => {
+        this.addAgent(agentName);
+      });
+      return this.agents;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
