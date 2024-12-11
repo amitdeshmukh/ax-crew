@@ -62,7 +62,11 @@
       },
       "options": {
         "debug": true,
-        "googleSearchRetrieval": true
+        "googleSearchRetrieval": {
+          "dynamic_retrieval_config": {
+            "mode": "MODE_UNSPECIFIED"
+          }
+        }
       },
       "functions": ["CurrentDateTime", "DaysBetweenDates"]
     },
