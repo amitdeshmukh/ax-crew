@@ -5,7 +5,13 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
-## [3.3.0] - 2024-12-11
+## [3.3.1] - 2024-12-11
+
+### Changed
+- Fixed Websearch agent configuration in `agentConfig.json`
+- Refactored agent configuration structure in `src/agents/agentConfig.ts` for better type safety and maintainability
+
+## [3.3.0] - 2024-12-10
 
 ### Added
 - Added `getUsageCost` method to track API usage costs and token metrics

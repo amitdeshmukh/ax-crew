@@ -173,21 +173,19 @@ const getAgentConfigParams = (
       throw new Error(`Provider key name is missing in the agent configuration`);
     }
 
-    // Create an instance of the AI agent
+    // Create an instance of the AI agent and set options
     const ai = new AIConstructor({
       apiKey,
       config: agentConfigData.ai,
       options: {
-        debug: agentConfigData.debug || false
+        debug: agentConfigData.debug || false,
+        ...agentConfigData.options
       }
     });
     // If an apiURL is provided in the agent config, set it in the AI agent
     if (agentConfigData.apiURL) {
       ai.setAPIURL(agentConfigData.apiURL);
     }
-
-    // Set all options from the agent configuration
-    ai.setOptions({ ...agentConfigData.options });
     
     // Prepare functions for the AI agent
     const agentFunctions = (agentConfigData.functions || [])
