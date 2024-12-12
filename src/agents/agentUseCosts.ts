@@ -1,14 +1,14 @@
-interface ModelUsage {
+export interface ModelUsage {
   promptTokens: number;
   completionTokens: number;
 }
 
-interface ModelInfo {
+export interface ModelInfo {
   promptTokenCostPer1M: number;
   completionTokenCostPer1M: number;
 }
 
-interface UsageCost {
+export interface UsageCost {
   promptCost: number;
   completionCost: number;
   totalCost: number;

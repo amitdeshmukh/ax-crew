@@ -10,7 +10,7 @@ import { getAgentConfigParams } from "./agentConfig.js";
 import type { AgentConfigInput } from "./agentConfig.js";
 import { FunctionRegistryType } from "../functions/index.js";
 import { createState, StateInstance } from "../state/index.js";
-import { StateFulAxAgentUsage } from "./agentUseCosts.js";
+import { StateFulAxAgentUsage, UsageCost } from "./agentUseCosts.js";
 
 // Define the interface for the agent configuration
 interface AgentConfigParams {
@@ -70,7 +70,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
   }
 
   // Get the usage cost for a run of the agent
-  getUsageCost() {
+  getUsageCost(): UsageCost | null {
     const { modelUsage, modelInfo, models } = this.axai;
     const currentModelInfo = modelInfo?.find((m: { name: string }) => m.name === models.model);
     
