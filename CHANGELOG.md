@@ -5,6 +5,18 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.3.3] - 2024-12-12
+
+### Added
+- TypeScript declaration file (`index.d.ts`)
+- Improved type definitions for:
+  - `AxCrew` class and its methods
+  - `StatefulAxAgent` class
+  - State management interfaces
+  - Function registry types
+  - Configuration types
+- TypeScript documentation in `README.md` with example
+
 ## [3.3.1] - 2024-12-11
 
 ### Changed

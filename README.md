@@ -22,6 +22,86 @@ AxLLM is a peer dependency, so you will need to install it separately.
 npm install @ax-llm/ax@latest
 ```
 
+### TypeScript Support
+This package includes TypeScript declarations and provides full type safety. Here's how to use it with TypeScript:
+
+```typescript
+import { AxCrew, AxCrewFunctions, FunctionRegistryType, StateInstance } from '@amitdeshmukh/ax-crew';
+import type { AxFunction } from '@ax-llm/ax';
+
+// Type-safe configuration
+const config = {
+  crew: [{
+    name: "Planner",
+    description: "Creates a plan to complete a task",
+    signature: "task:string \"a task to be completed\" -> plan:string \"a plan to execute the task\"",
+    provider: "google-gemini",
+    providerKeyName: "GEMINI_API_KEY",
+    ai: {
+      model: "gemini-1.5-pro",
+      temperature: 0
+    }
+  }]
+};
+
+// Create custom functions with type safety
+class MyCustomFunction {
+  constructor(private state: Record<string, any>) {}
+  
+  toFunction(): AxFunction {
+    return {
+      name: 'MyCustomFunction',
+      description: 'Does something useful',
+      parameters: {
+        type: 'object',
+        properties: {
+          inputParam: { type: 'string', description: "input to the function" }
+        }
+      },
+      func: async ({ inputParam }) => {
+        // Implementation
+        return inputParam;
+      }
+    };
+  }
+}
+
+// Type-safe function registry
+const myFunctions: FunctionRegistryType = {
+  MyCustomFunction
+};
+
+// Create crew with type checking
+const crew = new AxCrew(config, myFunctions);
+
+// Type-safe state management
+crew.state.set('key', 'value');
+const value: string = crew.state.get('key');
+
+// Type-safe agent management
+const agents = crew.addAgentsToCrew(['Planner']);
+const planner = agents?.get('Planner');
+
+if (planner) {
+  // Type-safe agent usage
+  const response = await planner.forward({ task: "Plan something" });
+  const cost = planner.getUsageCost();
+  
+  if (cost) {
+    console.log(`Total cost: $${cost.totalCost}`);
+    console.log(`Total tokens: ${cost.tokenMetrics.totalTokens}`);
+  }
+}
+```
+
+Key TypeScript features:
+- Full type definitions for all classes, methods, and properties
+- Type-safe configuration objects
+- Proper typing for function registries and custom functions
+- Type checking for state management
+- Comprehensive type safety for agent operations and responses
+- Usage cost tracking with proper types
+
 ### Environment Setup
 Refer to the [.env.example](.env.example) file for the required environment variables. These will need to be set in the environment where the agents are run.
 

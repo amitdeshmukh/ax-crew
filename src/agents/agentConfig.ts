@@ -20,17 +20,15 @@ const AIConstructors: Record<string, any> = {
   'together': AxAITogether
 };
 
-type ExtendedAxModelConfig = AxModelConfig & {
-  model: string;
-};
 
-interface AgentConfig {
+
+export interface AgentConfig {
   name: string;
   description: string;
-  signature: AxSignature;
+  signature: string | AxSignature;
   provider: string;
   providerKeyName?: string;
-  ai: ExtendedAxModelConfig;
+  ai: AxModelConfig & { model: string };
   debug?: boolean;
   apiURL?: string;
   options?: Record<string, any>;

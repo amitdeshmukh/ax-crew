@@ -17,7 +17,7 @@ interface AgentConfigParams {
   ai: AxAI;
   name: string;
   description: string;
-  signature: AxSignature;
+  signature: string | AxSignature;
   functions: (
     | AxFunction
     | (new (state: Record<string, any>) => { toFunction: () => AxFunction })
