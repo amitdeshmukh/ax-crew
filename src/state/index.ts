@@ -1,46 +1,41 @@
-interface StateInstance {
-  set: (key: string, value: any) => void;
-  get: (key: string) => any;
-  getAll: () => { [key: string]: any };
-  getId: () => string;
-  reset: () => void;
+export interface StateInstance {
+  reset(): void;
+  set(key: string, value: any): void;
+  get(key: string): any;
+  getAll(): Record<string, any>;
+  [key: string]: any;
 }
 
 const stateInstances: { [id: string]: StateInstance } = {};
 
-const createState = (id: string): StateInstance => {
-  if (!id) {
-    throw new Error('An ID is required to create a new state instance.');
-  }
+function createState(id: string): StateInstance {
   if (stateInstances[id]) {
     return stateInstances[id];
   }
 
-  let data: { [key: string]: any } = {};
-
-  stateInstances[id] = {
-    set: (key, value) => {
-      data[key] = value;
+  let state: Record<string, any> = {};
+  
+  const instance: StateInstance = {
+    reset() {
+      state = {};
     },
-    get: (key) => {
-      return data[key];
+    set(key: string, value: any) {
+      state[key] = value;
     },
-    getAll: () => {
-      return data;
+    get(key: string) {
+      return state[key];
     },
-    getId: () => {
-      return id;
-    },
-    reset: () => {
-      data = {};
+    getAll() {
+      return { ...state };
     }
   };
 
-  return stateInstances[id];
-};
+  stateInstances[id] = instance;
+  return instance;
+}
 
-const getState = (id: string): StateInstance | undefined  => {
+function getState(id: string): StateInstance | undefined {
   return stateInstances[id];
 }
 
-export { createState, getState, StateInstance };
+export { createState, getState };
