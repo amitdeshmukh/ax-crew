@@ -5,6 +5,12 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.3.4] - 2024-12-31
+
+### Removed
+- Removed unused `js-yaml` dependency
+- Updated `README.md` to highlight AxLLM 10.0.9 as peer dependency
+
 ## [3.3.3] - 2024-12-12
 
 ### Added
