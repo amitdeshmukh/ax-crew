@@ -5,6 +5,14 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.3.4] - 2025-02-03
+
+### Changed
+- Fixed sub-agent function calling in StatefulAxAgent to properly handle AI configuration
+- Improved TypeScript function overloads for the forward method to provide better type safety and readability
+- Removed redundant AI parameter passing in sub-agent calls
+- Added an [example](examples/write-post-and-publish-to-wordpress.ts) of using AxCrew to write a post and publish it to WordPress
+
 ## [3.3.3] - 2024-12-12
 
 ### Added

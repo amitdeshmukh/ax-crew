@@ -61,12 +61,22 @@ class StatefulAxAgent extends AxAgent<any, any> {
     }
   }
 
-  // Override the forward method
+  // Function overloads for forward method
+  async forward(values: Record<string, any>, options?: Readonly<AxProgramForwardOptions>): Promise<Record<string, any>>;
+  async forward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramForwardOptions>): Promise<Record<string, any>>;
+  
+  // Implementation
   async forward(
-    input: Record<string, any>,
-    options?: Readonly<AxProgramForwardOptions>
+    first: Record<string, any> | AxAI,
+    second?: Record<string, any> | Readonly<AxProgramForwardOptions>,
+    third?: Readonly<AxProgramForwardOptions>
   ): Promise<Record<string, any>> {
-    return super.forward(this.axai, input, options);
+    // Sub-agent case (called with AI service)
+    if ('apiURL' in first) {
+      return super.forward(this.axai, second as Record<string, any>, third);
+    }
+    // Direct call case
+    return super.forward(this.axai, first, second as Readonly<AxProgramForwardOptions>);
   }
 
   // Get the usage cost for a run of the agent

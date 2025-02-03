@@ -74,17 +74,22 @@ const myFunctions: FunctionRegistryType = {
 // Create crew with type checking
 const crew = new AxCrew(config, myFunctions);
 
-// Type-safe state management
+// Set and get state
 crew.state.set('key', 'value');
 const value: string = crew.state.get('key');
 
-// Type-safe agent management
+// Add agents to the crew
 const agents = crew.addAgentsToCrew(['Planner']);
 const planner = agents?.get('Planner');
 
 if (planner) {
-  // Type-safe agent usage
+  // Agent usage with function overloads
+  // Direct usage - AI config from agent construction is used
   const response = await planner.forward({ task: "Plan something" });
+  
+  // Sub-agent usage - when used by another agent (AI is ignored and agent's own config is used)
+  const subAgentResponse = await planner.forward(ai, { task: "Plan something" });
+  
   const cost = planner.getUsageCost();
   
   if (cost) {
