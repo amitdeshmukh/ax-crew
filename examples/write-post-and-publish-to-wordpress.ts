@@ -1,9 +1,8 @@
-import { AxCrew, AxCrewFunctions, FunctionRegistryType } from '../dist/index.js';
-import type { AxFunction } from '@ax-llm/ax';
+import { AxCrew } from '../dist/index.js';
 import fetch from 'node-fetch';
 import https from 'https';
 
-// Type-safe configuration
+// AxCrew configuration
 const config = {
   crew: [
     {
@@ -54,28 +53,6 @@ const config = {
   ]
 };
 
-// Create custom functions with type safety
-class MyCustomFunction {
-  constructor(private state: Record<string, any>) {}
-  
-  toFunction(): AxFunction {
-    return {
-      name: 'MyCustomFunction',
-      description: 'Does something useful',
-      parameters: {
-        type: 'object',
-        properties: {
-          input: { type: 'string', description: "input to the function" }
-        }
-      },
-      func: async ({ input }) => {
-        // Implementation
-        return input;
-      }
-    };
-  }
-}
-
 // Function to post to WordPress
 async function postToWordPress(title: string, content: string, status: 'draft' | 'publish' = 'draft') {
   const wpUrl = process.env.WORDPRESS_URL;
@@ -124,19 +101,9 @@ async function postToWordPress(title: string, content: string, status: 'draft' |
   }
 }
 
-// Type-safe function registry
-const myFunctions: FunctionRegistryType = {
-  MyCustomFunction
-};
-
-
 const main = async () => {
   // Create crew with type checking
   const crew = new AxCrew(config);
-
-  // Type-safe state management
-  // crew.state.set('key', 'value');
-  // const value: string = crew.state.get('key');
 
   // Type-safe agent management
   const agents = crew.addAgentsToCrew(['SearchQueryGenerator', 'GoogleSearch', 'BlogPostWriter']);
@@ -144,8 +111,8 @@ const main = async () => {
   const googleSearch = agents?.get('GoogleSearch');
   const writer = agents?.get('BlogPostWriter');
 
-  const topic = "a how to guide on manifesting a new reality in your life using Neville Goddard's teachings";
-  const guidance = "The article should help the reader to implement the visualization techniques for manifesting their new realities. Make the article fun and engaging.";
+  const topic = "How to tell what your cat is thinking";
+  const guidance = "The article should be a fun and engaging article that will help the reader to understand their cat better.";
 
   if (planner && googleSearch && writer) {
     // Type-safe agent usage
