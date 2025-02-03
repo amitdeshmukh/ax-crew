@@ -5,7 +5,7 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
-## [3.5.2] - 2024-03-26
+## [3.5.2] - 2025-02-03
 
 ### Added
 - Enhanced cost tracking with precise decimal calculations for agent and crew usage
