@@ -5,6 +5,16 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.5.2] - 2024-03-26
+
+### Added
+- Enhanced cost tracking with precise decimal calculations for agent and crew usage
+- Improved token metrics aggregation across multiple agent runs
+- Added support for per-agent and total crew cost analysis
+
+### Fixed
+- Added missing decimal.js dependency installation to resolve type declarations error
+
 ## [3.3.4] - 2025-02-03
 
 ### Changed

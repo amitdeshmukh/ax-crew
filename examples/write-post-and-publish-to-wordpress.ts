@@ -1,4 +1,4 @@
-import { AxCrew } from '../dist/index.js';
+import { AxCrew } from "../dist/index.js";
 import fetch from 'node-fetch';
 import https from 'https';
 

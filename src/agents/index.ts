@@ -31,6 +31,7 @@ interface AgentConfigParams {
 class StatefulAxAgent extends AxAgent<any, any> {
   state: StateInstance;
   axai: any;
+  private agentName: string;
 
   constructor(
     ai: AxAI,
@@ -54,6 +55,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     super(formattedOptions);
     this.state = state;
     this.axai = ai;
+    this.agentName = options.name;
 
     // Set examples if provided
     if (examples && examples.length > 0) {
@@ -72,11 +74,21 @@ class StatefulAxAgent extends AxAgent<any, any> {
     third?: Readonly<AxProgramForwardOptions>
   ): Promise<Record<string, any>> {
     // Sub-agent case (called with AI service)
+    let result;
     if ('apiURL' in first) {
-      return super.forward(this.axai, second as Record<string, any>, third);
+      result = await super.forward(this.axai, second as Record<string, any>, third);
+    } else {
+      // Direct call case
+      result = await super.forward(this.axai, first, second as Readonly<AxProgramForwardOptions>);
     }
-    // Direct call case
-    return super.forward(this.axai, first, second as Readonly<AxProgramForwardOptions>);
+
+    // Track costs in state after the call
+    const cost = this.getUsageCost();
+    if (cost) {
+      StateFulAxAgentUsage.trackCostInState(this.agentName, cost, this.state);
+    }
+
+    return result;
   }
 
   // Get the usage cost for a run of the agent
@@ -91,6 +103,15 @@ class StatefulAxAgent extends AxAgent<any, any> {
     return StateFulAxAgentUsage.calculateCost(modelUsage, currentModelInfo);
   }
 
+  // Get aggregated costs for all agents in the crew
+  getAggregatedCosts(): ReturnType<typeof StateFulAxAgentUsage.getAggregatedCosts> {
+    return StateFulAxAgentUsage.getAggregatedCosts(this.state);
+  }
+
+  // Reset all cost tracking
+  resetCosts(): void {
+    StateFulAxAgentUsage.resetCosts(this.state);
+  }
 }
 
 /**
