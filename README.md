@@ -76,17 +76,22 @@ const myFunctions: FunctionRegistryType = {
 // Create crew with type checking
 const crew = new AxCrew(config, myFunctions);
 
-// Type-safe state management
+// Set and get state
 crew.state.set('key', 'value');
 const value: string = crew.state.get('key');
 
-// Type-safe agent management
+// Add agents to the crew
 const agents = crew.addAgentsToCrew(['Planner']);
 const planner = agents?.get('Planner');
 
 if (planner) {
-  // Type-safe agent usage
+  // Agent usage with function overloads
+  // Direct usage - AI config from agent construction is used
   const response = await planner.forward({ task: "Plan something" });
+  
+  // Sub-agent usage - when used by another agent (AI is ignored and agent's own config is used)
+  const subAgentResponse = await planner.forward(ai, { task: "Plan something" });
+  
   const cost = planner.getUsageCost();
   
   if (cost) {
@@ -313,19 +318,20 @@ console.log(`\n\nAnswer: ${answer}`);
 
 ### Tracking Usage Costs
 
-You can track the usage costs for each agent's execution using the `getUsageCost` method. This is particularly useful for monitoring API costs and usage patterns.
+The package provides precise cost tracking capabilities for monitoring API usage across individual agents and the entire crew. Costs are calculated using high-precision decimal arithmetic to ensure accuracy.
 
 ```javascript
 // After running an agent's forward method
 const response = await Planner.forward({ task: userQuery });
-const cost = Planner.getUsageCost();
 
-console.log(cost);
+// Get individual agent costs
+const agentCost = Planner.getUsageCost();
+console.log(agentCost);
 /* Output example:
 {
-  promptCost: 0.00036375,
-  completionCost: 0.00061,
-  totalCost: 0.00097375,
+  promptCost: "0.0003637500000",
+  completionCost: "0.0006100000000",
+  totalCost: "0.0009737500000",
   tokenMetrics: {
     promptTokens: 291,
     completionTokens: 122,
@@ -333,7 +339,39 @@ console.log(cost);
   }
 }
 */
+
+// Get aggregated costs for all agents in the crew
+const crewCosts = crew.getAggregatedCosts();
+console.log(crewCosts);
+/* Output example:
+{
+  totalCost: "0.0025482500000",
+  byAgent: {
+    "Planner": { ... },
+    "Calculator": { ... },
+    "Manager": { ... }
+  },
+  aggregatedMetrics: {
+    promptTokens: 850,
+    completionTokens: 324,
+    totalTokens: 1174,
+    promptCost: "0.0010625000000",
+    completionCost: "0.0014857500000"
+  }
+}
+*/
+
+// Reset cost tracking if needed
+crew.resetCosts();
 ```
+
+Cost tracking features:
+- High-precision decimal calculations using decimal.js
+- Per-agent cost breakdown
+- Aggregated crew-wide metrics
+- Token usage statistics
+- Support for different pricing tiers per model
+- Persistent cost tracking across multiple agent runs
 
 ## Changelog
 

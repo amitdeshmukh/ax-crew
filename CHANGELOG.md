@@ -5,11 +5,23 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
-## [3.3.4] - 2024-12-31
+## [3.5.2] - 2025-02-03
 
-### Removed
-- Removed unused `js-yaml` dependency
-- Updated `README.md` to highlight AxLLM 10.0.9 as peer dependency
+### Added
+- Enhanced cost tracking with precise decimal calculations for agent and crew usage
+- Improved token metrics aggregation across multiple agent runs
+- Added support for per-agent and total crew cost analysis
+
+### Fixed
+- Added missing decimal.js dependency installation to resolve type declarations error
+
+## [3.3.4] - 2025-02-03
+
+### Changed
+- Fixed sub-agent function calling in StatefulAxAgent to properly handle AI configuration
+- Improved TypeScript function overloads for the forward method to provide better type safety and readability
+- Removed redundant AI parameter passing in sub-agent calls
+- Added an [example](examples/write-post-and-publish-to-wordpress.ts) of using AxCrew to write a post and publish it to WordPress
 
 ## [3.3.3] - 2024-12-12
 

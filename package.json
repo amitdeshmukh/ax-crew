@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@amitdeshmukh/ax-crew",
-  "version": "3.3.4",
+  "version": "3.5.1",
   "description": "Build and launch a crew of AI agents with shared state. Built with axllm.dev",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,6 +13,7 @@
     "release": "npm run build && npm publish --access public"
   },
   "dependencies": {
+    "decimal.js": "^10.5.0",
     "dotenv": "^16.4.5",
     "upgrade": "^1.1.0",
     "uuid": "^10.0.0"

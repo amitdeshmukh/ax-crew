@@ -1,9 +1,9 @@
 import { AxAI, AxAgentic, AxFunction, AxSignature, AxProgramForwardOptions, AxModelConfig, AxAgent } from "@ax-llm/ax";
 
 export interface UsageCost {
-  promptCost: number;
-  completionCost: number;
-  totalCost: number;
+  promptCost: string;
+  completionCost: string;
+  totalCost: string;
   tokenMetrics: {
     promptTokens: number;
     completionTokens: number;
