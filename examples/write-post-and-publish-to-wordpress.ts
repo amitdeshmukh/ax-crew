@@ -1,6 +1,6 @@
-import { AxCrew } from "../dist/index.js";
-import fetch from 'node-fetch';
-import https from 'https';
+import { AxCrew } from "@amitdeshmukh/ax-crew";
+import type { FunctionRegistryType } from "@amitdeshmukh/ax-crew";
+import { WordPressPost } from "@ax-crew/tools-wordpress";
 
 // AxCrew configuration
 const config = {
@@ -8,7 +8,7 @@ const config = {
     {
       name: "SearchQueryGenerator",
       description: "Generates a list of google search queries to help research the topic",
-      signature: "topic:string \"The topic of the blog post\", guidance:string \"guidance from the user on what the blog post should be about\" -> googleSearchQueries:string[] \"an array of google search queries to help research the topic\"",
+      signature: "topic:string \"The topic of the blog post\", guidance:string \"guidance from the user on what the blog post should be about\" -> googleSearchQueries:string[] \"an array of upto 5 google search queries to help research the topic\"",
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
@@ -27,7 +27,7 @@ const config = {
       provider: "google-gemini",
       providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-1.5-pro",
         temperature: 0.5
       },
       options: {
@@ -49,93 +49,83 @@ const config = {
         debug: true,
         stream: false
       }
+    },
+    {
+      name: "WordPressPoster",
+      description: "Creates a post on WordPress with the given title, content and status",
+      signature: "blogPostTitle:string \"the title of the blog post\", blogPostContent:string \"the content of the blog post.\", status:string \"the status of the post (draft, publish, private)\" -> postResponse:string \"the response from the WordPress API\"",
+      provider: "anthropic",
+      providerKeyName: "ANTHROPIC_API_KEY",
+      ai: {
+        model: "claude-3-5-sonnet-20240620",
+        temperature: 0
+      },
+      options: {
+        debug: true,
+        stream: false
+      },
+      functions: ["WordPressPost"]
     }
   ]
 };
 
-// Function to post to WordPress
-async function postToWordPress(title: string, content: string, status: 'draft' | 'publish' = 'draft') {
-  const wpUrl = process.env.WORDPRESS_URL;
-  const wpUsername = process.env.WORDPRESS_USERNAME;
-  const wpPassword = process.env.WORDPRESS_PASSWORD;
-
-  if (!wpUrl) {
-    throw new Error('WordPress credentials not found in environment variables');
-  }
-
-  const auth = Buffer.from(`${wpUsername}:${wpPassword}`).toString('base64');
-  
-  const httpsAgent = new https.Agent({
-    rejectUnauthorized: false
-  });
-
-  try {
-    const response = await fetch(`${wpUrl}/wp-json/wp/v2/posts`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        title,
-        content,
-        status
-      }),
-      agent: httpsAgent
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`WordPress API error: ${error}`);
-    }
-
-    const post = await response.json();
-    return {
-      id: post.id,
-      url: post.link,
-      status: post.status
-    };
-  } catch (error) {
-    console.error('Error details:', error);
-    throw new Error(`Failed to post to WordPress: ${error.message}`);
-  }
-}
-
 const main = async () => {
   // Create crew with type checking
-  const crew = new AxCrew(config);
+  const customFunctions: FunctionRegistryType = {
+    WordPressPost: WordPressPost
+  };
+  const crew = new AxCrew(config, customFunctions);
 
-  // Type-safe agent management
-  const agents = crew.addAgentsToCrew(['SearchQueryGenerator', 'GoogleSearch', 'BlogPostWriter']);
+  // Add agents to crew
+  const agents = crew.addAgentsToCrew([
+    'SearchQueryGenerator', 
+    'GoogleSearch', 
+    'BlogPostWriter', 
+    'WordPressPoster'
+  ]);
+
+  // NOTE: Your Wordpress site needs to have the Basic Auth plugin installed and enabled for the automatic posting to work
+  // Refer to https://github.com/WP-API/Basic-Auth?tab=readme-ov-file
+  
+  // Set environment variables
+  crew.state.set("env", {
+    WORDPRESS_URL: "http://my-wordpress-site.com",
+    WORDPRESS_USERNAME: "my-username",
+    WORDPRESS_PASSWORD: "my-password"
+  });
+
+  // Get agents from crew
   const planner = agents?.get('SearchQueryGenerator');
   const googleSearch = agents?.get('GoogleSearch');
   const writer = agents?.get('BlogPostWriter');
+  const poster = agents?.get('WordPressPoster');
 
-  const topic = "How to tell what your cat is thinking";
-  const guidance = "The article should be a fun and engaging article that will help the reader to understand their cat better.";
+  // Define the topic and guidance
+  const topic = "How to tell what your dog is thinking";
+  const guidance = "The article should be a fun and engaging article and less that 500 words long. It should help the reader to understand their dog better.";
 
-  if (planner && googleSearch && writer) {
-    // Type-safe agent usage
+  if (planner && googleSearch && writer && poster) {
+    // Generate search queries
     const plannerResponse = await planner.forward({ topic, guidance });
     const { googleSearchQueries } = plannerResponse;
 
+    // Research the topic
     const googleSearchResults: string[] = [];
     for (const query of googleSearchQueries) {
       const googleSearchResponse = await googleSearch.forward({ googleSearchQuery: query });
       const { googleSearchResult } = googleSearchResponse;
       googleSearchResults.push(googleSearchResult);
+      // Wait for 3 seconds between queries to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
-
+    // Write the blog post
     const writerResponse = await writer.forward({ topic, guidance, googleSearchResults });
     const { blogPostTitle, blogPostContent } = writerResponse;
 
-    console.log(blogPostTitle);
-    console.log(blogPostContent);
-
     // Post to WordPress
     try {
-      const postResponse = await postToWordPress(blogPostTitle, blogPostContent, 'publish');
+      const postResponse = await poster.forward({ blogPostTitle, blogPostContent, status: "publish" });
       console.log('Successfully posted to WordPress:', postResponse);
     } catch (error) {
       console.error('Failed to post to WordPress:', error);
