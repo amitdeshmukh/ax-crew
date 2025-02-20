@@ -73,17 +73,20 @@ class StatefulAxAgent extends AxAgent<any, any> {
     second?: Record<string, any> | Readonly<AxProgramForwardOptions>,
     third?: Readonly<AxProgramForwardOptions>
   ): Promise<Record<string, any>> {
-    // Sub-agent case (called with AI service)
     let result;
+    
+    // Track costs regardless of whether it's a direct or sub-agent call
+    // This ensures we capture multiple legitimate calls to the same agent
     if ('apiURL' in first) {
+      // Sub-agent case (called with AI service)
       result = await super.forward(this.axai, second as Record<string, any>, third);
     } else {
       // Direct call case
       result = await super.forward(this.axai, first, second as Readonly<AxProgramForwardOptions>);
     }
 
-    // Track costs in state after the call
-    const cost = this.getUsageCost();
+    // Track costs after the call
+    const cost = this.getLastUsageCost();
     if (cost) {
       StateFulAxAgentUsage.trackCostInState(this.agentName, cost, this.state);
     }
@@ -91,10 +94,10 @@ class StatefulAxAgent extends AxAgent<any, any> {
     return result;
   }
 
-  // Get the usage cost for a run of the agent
-  getUsageCost(): UsageCost | null {
-    const { modelUsage, modelInfo, models } = this.axai;
-    const currentModelInfo = modelInfo?.find((m: { name: string }) => m.name === models.model);
+  // Get the usage cost for the most recent run of the agent
+  getLastUsageCost(): UsageCost | null {
+    const { modelUsage, modelInfo, defaults } = this.axai;
+    const currentModelInfo = modelInfo?.find((m: { name: string }) => m.name === defaults.model);
     
     if (!currentModelInfo || !modelUsage) {
       return null;
@@ -103,14 +106,10 @@ class StatefulAxAgent extends AxAgent<any, any> {
     return StateFulAxAgentUsage.calculateCost(modelUsage, currentModelInfo);
   }
 
-  // Get aggregated costs for all agents in the crew
-  getAggregatedCosts(): ReturnType<typeof StateFulAxAgentUsage.getAggregatedCosts> {
-    return StateFulAxAgentUsage.getAggregatedCosts(this.state);
-  }
-
-  // Reset all cost tracking
-  resetCosts(): void {
-    StateFulAxAgentUsage.resetCosts(this.state);
+  // Get the accumulated costs for all runs of this agent
+  getAccumulatedCosts(): UsageCost | null {
+    const stateKey = `${StateFulAxAgentUsage.STATE_KEY_PREFIX}${this.agentName}`;
+    return this.state.get(stateKey) as UsageCost | null;
   }
 }
 
@@ -234,6 +233,21 @@ class AxCrew {
   destroy() {
     this.agents = null;
     this.state.reset();
+  }
+
+  /**
+   * Gets aggregated costs for all agents in the crew
+   * @returns Aggregated cost information for all agents
+   */
+  getAggregatedCosts(): ReturnType<typeof StateFulAxAgentUsage.getAggregatedCosts> {
+    return StateFulAxAgentUsage.getAggregatedCosts(this.state);
+  }
+
+  /**
+   * Resets all cost tracking for the crew
+   */
+  resetCosts(): void {
+    StateFulAxAgentUsage.resetCosts(this.state);
   }
 }
 

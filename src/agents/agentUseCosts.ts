@@ -22,6 +22,20 @@ export interface UsageCost {
   }
 }
 
+export interface AggregatedMetrics {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  promptCost: string;
+  completionCost: string;
+}
+
+export interface AggregatedCosts {
+  totalCost: string;
+  byAgent: Record<string, UsageCost>;
+  aggregatedMetrics: AggregatedMetrics;
+}
+
 // Utility class to handle usage related functionality
 export class StateFulAxAgentUsage {
   static STATE_KEY_PREFIX = 'agent_usage_';
@@ -78,17 +92,7 @@ export class StateFulAxAgentUsage {
     }
   }
 
-  static getAggregatedCosts(state: StateInstance): { 
-    totalCost: string;
-    byAgent: Record<string, UsageCost>;
-    aggregatedMetrics: {
-      promptTokens: number;
-      completionTokens: number;
-      totalTokens: number;
-      promptCost: string;
-      completionCost: string;
-    };
-  } {
+  static getAggregatedCosts(state: StateInstance): AggregatedCosts {
     const allState = state.getAll();
     const agentCosts: Record<string, UsageCost> = {};
     let totalPromptTokens = 0;

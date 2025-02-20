@@ -5,6 +5,20 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.5.3] - 2025-02-20
+
+### Added
+- New methods for crew level cost tracking:
+  - `getAggregatedCosts()` for crew-wide metrics
+  - `resetCosts()` for resetting cost tracking
+  - Enhanced `forward()` method with automatic cost tracking
+- New TypeScript interfaces for better type safety in cost tracking
+- Improved token metrics aggregation with detailed per-agent breakdowns
+
+### Fixed
+- Improved handling of cost calculations for sub-agent calls
+- Updated [examples](./examples/) to demonstrate the new cost tracking methods
+
 ## [3.5.2] - 2025-02-03
 
 ### Added

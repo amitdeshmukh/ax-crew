@@ -1,15 +1,7 @@
 import { AxAI, AxAgentic, AxFunction, AxSignature, AxProgramForwardOptions, AxModelConfig, AxAgent } from "@ax-llm/ax";
+import type { UsageCost, AggregatedCosts } from "./src/agents/agentUseCosts.js";
 
-export interface UsageCost {
-  promptCost: string;
-  completionCost: string;
-  totalCost: string;
-  tokenMetrics: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-}
+export { UsageCost, AggregatedCosts };
 
 export interface StateInstance {
   reset(): void;
@@ -83,6 +75,8 @@ export class AxCrew {
   createAgent(agentName: string): StatefulAxAgent;
   addAgent(agentName: string): void;
   addAgentsToCrew(agentNames: string[]): Map<string, StatefulAxAgent> | null;
+  getAggregatedCosts(): AggregatedCosts;
+  resetCosts(): void;
   destroy(): void;
 }
 

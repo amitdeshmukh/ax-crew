@@ -19,7 +19,7 @@
     "uuid": "^10.0.0"
   },
   "peerDependencies": {
-    "@ax-llm/ax": "10.0.9"
+    "@ax-llm/ax": "^11.0.21"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",

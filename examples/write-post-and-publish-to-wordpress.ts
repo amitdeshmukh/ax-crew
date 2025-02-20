@@ -1,3 +1,5 @@
+// NOTE: For a more complete example of a crew that can research a topic, write a post and publish to WordPress, please see ./write-post-and-publish-to-wordpress.ts
+
 import { AxCrew } from "@amitdeshmukh/ax-crew";
 import type { FunctionRegistryType } from "@amitdeshmukh/ax-crew";
 import { WordPressPost } from "@ax-crew/tools-wordpress";
@@ -32,7 +34,10 @@ const config = {
       },
       options: {
         debug: true,
-        stream: false
+        stream: false,
+        googleSearchRetrieval: {
+          mode: "MODE_UNSPECIFIED"
+        }
       }
     },
     {
