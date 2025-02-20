@@ -1,4 +1,4 @@
-import { AxCrew } from "../dist/index.js";
+import { AxCrew } from "@amitdeshmukh/ax-crew";
 
 // Define the crew configuration
 const config = {
@@ -32,7 +32,7 @@ const config = {
         temperature: 0,
       },
       options: {
-        debug: true,
+        debug: false,
       },
       agents: ["MathAgent"]
     },
@@ -47,27 +47,26 @@ const agents = crew.addAgentsToCrew(["MathAgent", "ManagerAgent"]);
 
 // Get agent instances
 const managerAgent = agents?.get("ManagerAgent");
+const mathAgent = agents?.get("MathAgent");
 
 const userQuery: string =
   "who is considered as the father of the iphone and what is the 7th root of their year of birth (precision to minimum 5 decimal places)";
 console.log(`\n\nQuestion: ${userQuery}`);
 
 const main = async (): Promise<void> => {
-  if (managerAgent) {
-    // Try with manager agent first
+  if (managerAgent && mathAgent) {
     const managerResponse = await managerAgent.forward({
       question: userQuery,
     });
 
-    console.log(
-      `\nManager's Answer: ${JSON.stringify(managerResponse.answer, null, 2)}\n`
-    );
+    console.log(`\nAnswer: ${JSON.stringify(managerResponse.answer, null, 2)}`);
 
     // Print usage costs
-    const managerCost = managerAgent.getUsageCost();
-
-    console.log("\nUsage Costs:");
-    console.log("Manager Agent:", managerCost);
+    console.log("\nUsage:\n+++++++++++++++++++++++++++++++++");
+    console.log("Manager Agent:", JSON.stringify(managerAgent.getAccumulatedCosts(), null, 2));
+    console.log("Math Agent:", JSON.stringify(mathAgent.getLastUsageCost(), null, 2));
+    console.log("Math Agent Accumulated Costs:", JSON.stringify(mathAgent.getAccumulatedCosts(), null, 2));
+    console.log("Total Cost:", JSON.stringify(crew.getAggregatedCosts(), null, 2));
   }
 };
 

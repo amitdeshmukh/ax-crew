@@ -135,13 +135,16 @@ A basic example showing core AxCrew features:
 All examples include cost tracking. You can monitor API usage costs:
 
 ```typescript
-// After running an agent
+// Get individual agent costs
 const cost = agent.getUsageCost();
 console.log("Usage cost:", cost);
 
-// Get aggregated costs for all agents
-const totalCosts = agent.getAggregatedCosts();
+// Get aggregated costs for all agents in the crew
+const totalCosts = crew.getAggregatedCosts();
 console.log("Total costs:", totalCosts);
+
+// Reset cost tracking if needed
+crew.resetCosts();
 ```
 
 ## Best Practices

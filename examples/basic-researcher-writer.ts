@@ -1,4 +1,4 @@
-import { AxCrew } from "../dist/index.js";
+import { AxCrew } from "@amitdeshmukh/ax-crew";
 
 // Example agent configuration
 const agentConfig = {
@@ -10,17 +10,23 @@ const agentConfig = {
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-opus-20240229"
-      }
+        model: "claude-3-sonnet-20240229"
+      },
+      options: {
+        debug: true,
+      },
     },
     {
       name: "writer",
       description: "A writing agent that creates content",
-      signature: "topic:string, research:string -> article:string",
+      signature: "topic:string -> article:string",
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
         model: "claude-3-sonnet-20240229"
+      },
+      options: {
+        debug: true,
       },
       agents: ["researcher"] // This makes writer use researcher as a sub-agent
     }
@@ -44,30 +50,23 @@ async function main() {
   }
 
   try {
-    // Use the researcher agent
-    const { research } = await researcher.forward({
-      query: "What are the key benefits of quantum computing?"
-    });
-    
     // Use the writer agent (which will internally use the researcher)
-    const article = await writer.forward({
+    const { article } = await writer.forward({
       topic: "Quantum Computing Benefits",
-      research: research
     });
 
     // Print the article
     console.log("Article:", article);
-
-    // Get costs for individual agents
-    const researcherCost = researcher.getUsageCost();
-    console.log("Researcher cost:", researcherCost);
     
-    // Get aggregated costs for all agents (includes both direct calls and sub-agent calls)
-    const totalCosts = writer.getAggregatedCosts();
-    console.log("Total cost breakdown:", JSON.stringify(totalCosts, null, 2));
+    // Print usage costs
+    console.log("\nUsage:\n+++++++++++++++++++++++++++++++++");
+    console.log("Writer Agent:", JSON.stringify(writer.getAccumulatedCosts(), null, 2));
+    console.log("Researcher Agent Last Usage:", JSON.stringify(researcher.getLastUsageCost(), null, 2));
+    console.log("Researcher Agent Accumulated:", JSON.stringify(researcher.getAccumulatedCosts(), null, 2));
+    console.log("Total Cost:", JSON.stringify(crew.getAggregatedCosts(), null, 2));
 
     // If you want to start fresh with cost tracking
-    writer.resetCosts();
+    crew.resetCosts();
     
   } finally {
     // Clean up

@@ -323,8 +323,24 @@ The package provides precise cost tracking capabilities for monitoring API usage
 const response = await Planner.forward({ task: userQuery });
 
 // Get individual agent costs
-const agentCost = Planner.getUsageCost();
+const agentCost = Planner.getLastUsageCost();
 console.log(agentCost);
+/* Output example:
+{
+  promptCost: "0.0003637500000",
+  completionCost: "0.0006100000000",
+  totalCost: "0.0009737500000",
+  tokenMetrics: {
+    promptTokens: 291,
+    completionTokens: 122,
+    totalTokens: 413
+  }
+}
+*/
+
+// Get cumulative costs for the agent
+const cumulativeCost = Planner.getAccumulatedCosts();
+console.log(cumulativeCost);
 /* Output example:
 {
   promptCost: "0.0003637500000",
