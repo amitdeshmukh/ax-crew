@@ -18,10 +18,8 @@ npm install @amitdeshmukh/ax-crew
 ```
 AxLLM is a peer dependency, so you will need to install it separately. 
 
-**Note:** Currently, we support AxLLM v10.0.9. We are working on updating this package to support the latest version of AxLLM as it introduces some breaking changes.
-
 ```bash
-npm install @ax-llm/ax@10.0.9
+npm install @ax-llm/ax
 ```
 
 ### TypeScript Support
