@@ -1,7 +1,7 @@
 import { AxCrew } from './agents/index.js';
 import { AxCrewFunctions, FunctionRegistryType } from './functions/index.js';
 import type { UsageCost, AggregatedMetrics, AggregatedCosts } from './agents/agentUseCosts.js';
-import type { AgentConfig, AgentConfigInput } from './agents/agentConfig.js';
+import type { AgentConfig, CrewConfigInput } from './agents/agentConfig.js';
 import type { StateInstance } from './state/index.js';
 
 // Main AxCrew configuration interface
@@ -23,7 +23,7 @@ export {
   type AggregatedMetrics,
   type AggregatedCosts,
   type AgentConfig,
-  type AgentConfigInput,
+  type CrewConfigInput,
   type StateInstance,
   type AxCrewConfig
 };

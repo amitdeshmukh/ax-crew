@@ -6,14 +6,14 @@ import type {
   AxFunction,
   AxProgramForwardOptions,
 } from "@ax-llm/ax";
-import { getAgentConfigParams } from "./agentConfig.js";
-import type { AgentConfigInput } from "./agentConfig.js";
+import { getAgentConfig, parseCrewConfig } from "./agentConfig.js";
+import type { CrewConfigInput, MCPTransportConfig } from "./agentConfig.js";
 import { FunctionRegistryType } from "../functions/index.js";
 import { createState, StateInstance } from "../state/index.js";
 import { StateFulAxAgentUsage, UsageCost } from "./agentUseCosts.js";
 
 // Define the interface for the agent configuration
-interface AgentConfigParams {
+interface AgentConfig {
   ai: AxAI;
   name: string;
   description: string;
@@ -23,11 +23,12 @@ interface AgentConfigParams {
     | (new (state: Record<string, any>) => { toFunction: () => AxFunction })
     | undefined
   )[];
+  mcpServers?: Record<string, MCPTransportConfig>;
   subAgentNames: string[];
   examples?: Array<Record<string, any>>;
 }
 
-// Extend the AxAgent class to include shared state functionality
+// Extend the AxAgent class from ax-llm
 class StatefulAxAgent extends AxAgent<any, any> {
   state: StateInstance;
   axai: any;
@@ -42,6 +43,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
       agents?: AxAgentic[] | undefined;
       functions?: (AxFunction | (() => AxFunction))[] | undefined;
       examples?: Array<Record<string, any>> | undefined;
+      mcpServers?: Record<string, MCPTransportConfig> | undefined;
     }>,
     state: StateInstance
   ) {
@@ -117,7 +119,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
  * Represents a crew of agents with shared state functionality.
  */
 class AxCrew {
-  private agentConfig: AgentConfigInput;
+  private crewConfig: CrewConfigInput;
   functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
@@ -125,16 +127,16 @@ class AxCrew {
 
   /**
    * Creates an instance of AxCrew.
-   * @param {AgentConfigInput} agentConfig - Either a path to the agent config file or a JSON object with crew configuration.
+   * @param {CrewConfigInput} crewConfig - Either a path to the agent config file or a JSON object with crew configuration.
    * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
   constructor(
-    agentConfig: AgentConfigInput,
+    crewConfig: CrewConfigInput,
     functionsRegistry: FunctionRegistryType = {},
     crewId: string = uuidv4()
   ) {
-    this.agentConfig = agentConfig;
+    this.crewConfig = crewConfig;
     this.functionsRegistry = functionsRegistry;
     this.crewId = crewId;
     this.agents = new Map<string, StatefulAxAgent>();
@@ -147,18 +149,18 @@ class AxCrew {
    * @returns {StatefulAxAgent} The created StatefulAxAgent instance.
    * @throws Will throw an error if the agent creation fails.
    */
-  createAgent = (agentName: string): StatefulAxAgent => {
+  createAgent = async (agentName: string): Promise<StatefulAxAgent> => {
     try {
-      const agentConfigParams: AgentConfigParams = getAgentConfigParams(
+      const agentConfig: AgentConfig = await getAgentConfig(
         agentName,
-        this.agentConfig,
+        this.crewConfig,
         this.functionsRegistry,
         this.state
       );
 
       // Destructure with type assertion
       const { ai, name, description, signature, functions, subAgentNames, examples } =
-        agentConfigParams;
+        agentConfig;
 
       // Get subagents for the AI agent
       const subAgents = subAgentNames.map((subAgentName: string) => {
@@ -227,6 +229,18 @@ class AxCrew {
     }
   }
 
+  addAllAgents(): Map<string, StatefulAxAgent> | null {
+    try {
+      // Parse the crew config and get all agent names
+      const parsedConfig = parseCrewConfig(this.crewConfig);
+      const agentNames = parsedConfig.crew.map(agent => agent.name);
+      
+      // Add all agents to the crew
+      return this.addAgentsToCrew(agentNames);
+    } catch (error) {
+      throw error;
+    }
+  }
   /**
    * Cleans up the crew by dereferencing agents and resetting the state.
    */
