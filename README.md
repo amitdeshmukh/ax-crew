@@ -16,10 +16,10 @@ Install this package:
 ```bash
 npm install @amitdeshmukh/ax-crew
 ```
-AxLLM is a peer dependency, so you will need to install it separately.
+AxLLM is a peer dependency, so you will need to install it separately. 
 
 ```bash
-npm install @ax-llm/ax@latest
+npm install @ax-llm/ax
 ```
 
 ### TypeScript Support

@@ -20,13 +20,30 @@ const AIConstructors: Record<string, any> = {
   'together': AxAITogether
 };
 
+// Provider types
+export type Provider = keyof typeof AIConstructors;
 
-
+/**
+ * The configuration for an agent.
+ * 
+ * @property {string} name - Name of the agent.
+ * @property {string} description - Description of the agent.
+ * @property {string | AxSignature} signature - The signature for the agent in DSPy format.
+ * @property {Provider} provider - LLM provider name.
+ * @property {string} providerKeyName - The name of the provider key (read from environment variables).
+ * @property {AxModelConfig & { model: string }} ai - The AI model configuration to be passed to the agent.
+ * @property {boolean} debug - Whether to enable debug mode.
+ * @property {string} apiURL - Set this if you are using a custom API URL e.g. ollama on localhost.
+ * @property {Record<string, any>} options - Agent options. Refer to the Ax documentation for more details.
+ * @property {string[]} functions - Function names to be used by the agent.
+ * @property {string[]} agents - Sub-agent available to the agent.
+ * @property {Record<string, any>[]} examples - DSPy examples for the agent to learn from.
+ */
 export interface AgentConfig {
   name: string;
   description: string;
   signature: string | AxSignature;
-  provider: string;
+  provider: Provider;
   providerKeyName?: string;
   ai: AxModelConfig & { model: string };
   debug?: boolean;
@@ -96,11 +113,14 @@ Original error: ${error.message}`;
   return `Error parsing agent configuration: ${error.message}`;
 };
 
+/**
+ * The input type for the agent config. This can be a path to a JSON file or a JSON object.
+ */
 type AgentConfigInput = string | { crew: AgentConfig[] };
 
 /**
  * Reads the AI parameters from either a JSON configuration file or a direct JSON object.
- * @param {AgentConfigInput} input - Either a path to the agent_config.json file or a JSON object with crew configuration.
+ * @param {AgentConfigInput} input - Either a path to the agent config json file or a JSON object with crew configuration.
  * @returns {Object} The parsed agent configs.
  * @throws Will throw an error if reading/parsing fails.
  */

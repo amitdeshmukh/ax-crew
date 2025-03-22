@@ -1,16 +1,30 @@
 import type { StateInstance } from '../state/index.js';
 import { Decimal } from 'decimal.js';
 
+/**
+ * The usage metrics of the model.
+ * promptTokens: number;
+ * completionTokens: number;
+ */
 export interface ModelUsage {
   promptTokens: number;
   completionTokens: number;
 }
 
+/**
+ * The published cost for using the model.
+ * promptTokenCostPer1M: number;
+ * completionTokenCostPer1M: number;
+ */
 export interface ModelInfo {
   promptTokenCostPer1M: number;
   completionTokenCostPer1M: number;
 }
 
+/**
+ * The cost incurred for using the model.
+ * 
+ */
 export interface UsageCost {
   promptCost: string;
   completionCost: string;
@@ -22,6 +36,10 @@ export interface UsageCost {
   }
 }
 
+/**
+ * Aggregated metrics from all agent and sub-agent invocations.
+ * 
+ */
 export interface AggregatedMetrics {
   promptTokens: number;
   completionTokens: number;
@@ -30,13 +48,20 @@ export interface AggregatedMetrics {
   completionCost: string;
 }
 
+/**
+ * The incurred costs from all agent and sub-agent invocations.
+ * 
+ */
 export interface AggregatedCosts {
   totalCost: string;
   byAgent: Record<string, UsageCost>;
   aggregatedMetrics: AggregatedMetrics;
 }
 
-// Utility class to handle usage related functionality
+/**
+ * Utility class to handle usage related functionality.
+ * 
+ */
 export class StateFulAxAgentUsage {
   static STATE_KEY_PREFIX = 'agent_usage_';
 

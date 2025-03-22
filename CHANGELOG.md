@@ -5,6 +5,20 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.6.1] - 2025-03-22
+
+### Changed
+- Improved type safety by making provider type more strict
+- Enhanced documentation with JSDoc comments across the codebase
+- Removed root `index.d.ts` in favor of auto-generated types during build
+- Updated `.gitignore` patterns
+
+### Added
+- New TypeScript interfaces for better type documentation:
+  - Added `AxCrewConfig` interface
+  - Enhanced `Provider` type definition
+  - Improved documentation for `StateInstance` and usage metrics
+
 ## [3.5.3] - 2025-02-20
 
 ### Added

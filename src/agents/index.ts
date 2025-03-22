@@ -59,7 +59,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
 
     // Set examples if provided
     if (examples && examples.length > 0) {
-      this.setExamples(examples);
+      super.setExamples(examples);
     }
   }
 

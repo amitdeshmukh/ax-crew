@@ -84,3 +84,4 @@ export const AxCrewFunctions: {
   CurrentDateTime: { new(state: Record<string, any>): { toFunction: () => AxFunction } };
   DaysBetweenDates: { new(state: Record<string, any>): { toFunction: () => AxFunction } };
 };
+
