@@ -10,7 +10,7 @@ const agentConfig = {
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-sonnet-20240229"
+        model: "claude-3-5-sonnet-20240620"
       },
       options: {
         debug: true,
@@ -23,7 +23,7 @@ const agentConfig = {
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-sonnet-20240229"
+        model: "claude-3-5-sonnet-20240620"
       },
       options: {
         debug: true,
@@ -39,7 +39,8 @@ async function main() {
   const crew = new AxCrew(agentConfig);
   
   // Add agents to the crew
-  await crew.addAgentsToCrew(["researcher", "writer"]);
+  await crew.addAgentsToCrew(["researcher"]); // Add researcher first
+  await crew.addAgentsToCrew(["writer"]); // Then add writer
   
   // Get references to our agents
   const writer = crew.agents?.get("writer");
