@@ -1,4 +1,4 @@
-import { AxCrew } from "@amitdeshmukh/ax-crew";
+import { AxCrew } from "../dist/index.js";
 
 // Example agent configuration
 const agentConfig = {
@@ -39,7 +39,7 @@ async function main() {
   const crew = new AxCrew(agentConfig);
   
   // Add agents to the crew
-  crew.addAgentsToCrew(["researcher", "writer"]);
+  await crew.addAgentsToCrew(["researcher", "writer"]);
   
   // Get references to our agents
   const writer = crew.agents?.get("writer");

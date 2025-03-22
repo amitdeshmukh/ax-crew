@@ -182,33 +182,42 @@ export const parseCrewConfig = (input: CrewConfigInput): { crew: AgentConfig[] }
   }
 };
 
-const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxMCPClient[]> => {
+const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFunction[]> => {
   const mcpServers = agentConfigData.mcpServers;
   if (!mcpServers || Object.keys(mcpServers).length === 0) {
     return [];
   }
 
-  const clients: AxMCPClient[] = [];
-  for (const [mcpServerName, mcpServerConfig] of Object.entries(mcpServers)) {
-    let transport;
-    if (isStdioTransport(mcpServerConfig)) {
-      transport = new AxMCPStdioTransport({
-        command: mcpServerConfig.command,
-        args: mcpServerConfig.args,
-        env: mcpServerConfig.env
-      });
-    } else if (isHTTPTransport(mcpServerConfig)) {
-      transport = new AxMCPHTTPTransport(mcpServerConfig.sseUrl);
-    } else {  
-      throw new Error(`Unsupported transport type: ${mcpServerConfig}`);
+  let initializedClients: AxMCPClient[] = [];
+  const functions: AxFunction[] = [];
+  
+  try {
+    for (const [mcpServerName, mcpServerConfig] of Object.entries(mcpServers)) {
+      let transport;
+      if (isStdioTransport(mcpServerConfig)) {
+        transport = new AxMCPStdioTransport({
+          command: mcpServerConfig.command,
+          args: mcpServerConfig.args,
+          env: mcpServerConfig.env
+        });
+      } else if (isHTTPTransport(mcpServerConfig)) {
+        transport = new AxMCPHTTPTransport(mcpServerConfig.sseUrl);
+      } else {  
+        throw new Error(`Unsupported transport type: ${mcpServerConfig}`);
+      }
+
+      const mcpClient = new AxMCPClient(transport, {debug: agentConfigData.debug || false});
+      await mcpClient.init();
+      initializedClients.push(mcpClient);
+      functions.push(...mcpClient.toFunction());
     }
-
-    const mcpClient = new AxMCPClient(transport, {debug: agentConfigData.debug || false});
-    await mcpClient.init();
-    clients.push(mcpClient);
+    
+    return functions;
+  } catch (error) {
+    initializedClients = [];
+    console.error('Error during MCP client setup:', error);
+    throw error;
   }
-
-  return clients;
 };
 
 /**
@@ -266,11 +275,17 @@ const getAgentConfig = async (
     });
     // If an apiURL is provided in the agent config, set it in the AI agent
     if (agentConfigData.apiURL) {
-      ai.setAPIURL(agentConfigData.apiURL);
+      try {
+        // Validate apiURL format
+        new URL(agentConfigData.apiURL);
+        ai.setAPIURL(agentConfigData.apiURL);
+      } catch (error) {
+        throw new Error(`Invalid apiURL provided: ${agentConfigData.apiURL}`);
+      }      
     }
 
     // If an mcpServers config is provided in the agent config, convert to functions
-    const mcpClients = await initializeMCPServers(agentConfigData);
+    const mcpFunctions = await initializeMCPServers(agentConfigData);
 
     // Prepare functions for the AI agent
     const agentFunctions = [
@@ -283,15 +298,18 @@ const getAgentConfig = async (
             return;
           }
 
-          if (isConstructor<{ toFunction: () => AxFunction }>(func)) {
-            return new func(state).toFunction();
+          try {
+            if (isConstructor<{ toFunction: () => AxFunction }>(func)) {
+              return new func(state).toFunction();
+            }
+          } catch (error) {
+            console.error(`Error initializing function ${funcName}:`, error);
+            return null;
           }
-
-          return func;
         })
-        .filter(Boolean),
-      // Add MCP clients to functions
-      ...mcpClients
+        .filter((func): func is AxFunction => func !== null),
+      // Add MCP functions to functions
+      ...mcpFunctions
     ];
     
     // Return AI instance and Agent parameters

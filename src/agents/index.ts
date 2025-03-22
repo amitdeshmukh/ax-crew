@@ -79,7 +79,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     
     // Track costs regardless of whether it's a direct or sub-agent call
     // This ensures we capture multiple legitimate calls to the same agent
-    if ('apiURL' in first) {
+    if (first instanceof AxAI) {
       // Sub-agent case (called with AI service)
       result = await super.forward(this.axai, second as Record<string, any>, third);
     } else {
@@ -200,14 +200,20 @@ class AxCrew {
    * Adds an agent to the crew by name.
    * @param {string} agentName - The name of the agent to add.
    */
-  addAgent(agentName: string): void {
+  async addAgent(agentName: string): Promise<void> {
     try {
+      if (!this.agents) {
+        this.agents = new Map<string, StatefulAxAgent>();
+      }
+      if (!this.agents.has(agentName)) {
+        this.agents.set(agentName, await this.createAgent(agentName));
+      }
       if (this.agents && !this.agents.has(agentName)) {
-        this.agents.set(agentName, this.createAgent(agentName));
+        this.agents.set(agentName, await this.createAgent(agentName));
       }
     } catch (error) {
       console.error(`Failed to create agent '${agentName}':`);
-      throw error;
+      throw new Error(`Failed to add agent ${agentName}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -218,25 +224,25 @@ class AxCrew {
    * @param {string[]} agentNames - An array of agent names to configure.
    * @returns {Map<string, StatefulAxAgent> | null} A map of agent names to their corresponding instances.
    */
-  addAgentsToCrew(agentNames: string[]): Map<string, StatefulAxAgent> | null {
+  async addAgentsToCrew(agentNames: string[]): Promise<Map<string, StatefulAxAgent> | null> {
     try {
-      agentNames.forEach((agentName) => {
-        this.addAgent(agentName);
-      });
+      await Promise.all(
+        agentNames.map(agentName => this.addAgent(agentName))
+      );
       return this.agents;
     } catch (error) {
       throw error;
     }
   }
 
-  addAllAgents(): Map<string, StatefulAxAgent> | null {
+  async addAllAgents(): Promise<Map<string, StatefulAxAgent> | null> {
     try {
       // Parse the crew config and get all agent names
       const parsedConfig = parseCrewConfig(this.crewConfig);
       const agentNames = parsedConfig.crew.map(agent => agent.name);
       
       // Add all agents to the crew
-      return this.addAgentsToCrew(agentNames);
+      return await this.addAgentsToCrew(agentNames);
     } catch (error) {
       throw error;
     }
