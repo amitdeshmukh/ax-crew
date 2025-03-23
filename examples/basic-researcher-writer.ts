@@ -1,4 +1,5 @@
 import { AxCrew } from "../dist/index.js";
+import { AxCrewFunctions } from "../src/functions/index.js";
 
 // Example agent configuration
 const agentConfig = {
@@ -10,11 +11,12 @@ const agentConfig = {
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-5-sonnet-20240620"
+        model: "claude-3-5-sonnet-latest"
       },
       options: {
         debug: true,
       },
+      functions: ["CurrentDateTime"]
     },
     {
       name: "writer",
@@ -23,7 +25,7 @@ const agentConfig = {
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-5-sonnet-20240620"
+        model: "claude-3-5-sonnet-latest"
       },
       options: {
         debug: true,
@@ -36,7 +38,7 @@ const agentConfig = {
 // Example usage
 async function main() {
   // Initialize the crew
-  const crew = new AxCrew(agentConfig);
+  const crew = new AxCrew(agentConfig, AxCrewFunctions);
   
   // Add agents to the crew
   await crew.addAgentsToCrew(["researcher"]); // Add researcher first

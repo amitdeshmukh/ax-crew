@@ -79,7 +79,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     
     // Track costs regardless of whether it's a direct or sub-agent call
     // This ensures we capture multiple legitimate calls to the same agent
-    if (first instanceof AxAI) {
+    if ('apiURL' in first) {
       // Sub-agent case (called with AI service)
       result = await super.forward(this.axai, second as Record<string, any>, third);
     } else {
@@ -159,8 +159,7 @@ class AxCrew {
       );
 
       // Destructure with type assertion
-      const { ai, name, description, signature, functions, subAgentNames, examples } =
-        agentConfig;
+      const { ai, name, description, signature, functions, subAgentNames, examples } = agentConfig;
 
       // Get subagents for the AI agent
       const subAgents = subAgentNames.map((subAgentName: string) => {
