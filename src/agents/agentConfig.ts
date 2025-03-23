@@ -297,15 +297,7 @@ const getAgentConfig = async (
             console.warn(`Warning: Function ${funcName} not found.`);
             return;
           }
-
-          try {
-            if (isConstructor<{ toFunction: () => AxFunction }>(func)) {
-              return new func(state).toFunction();
-            }
-          } catch (error) {
-            console.error(`Error initializing function ${funcName}:`, error);
-            return null;
-          }
+          return func;
         })
         .filter((func): func is AxFunction => func !== null),
       // Add MCP functions to functions
