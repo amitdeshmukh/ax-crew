@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { AxAgent, AxAI } from "@ax-llm/ax";
+
 import type {
   AxSignature,
   AxAgentic,
@@ -8,14 +9,21 @@ import type {
   AxProgramStreamingForwardOptions,
   AxGenStreamingOut,
 } from "@ax-llm/ax";
-import { getAgentConfig, parseCrewConfig } from "./agentConfig.js";
-import type { CrewConfigInput, MCPTransportConfig } from "./agentConfig.js";
-import { FunctionRegistryType } from "../functions/index.js";
-import { createState, StateInstance } from "../state/index.js";
-import { StateFulAxAgentUsage, UsageCost } from "./agentUseCosts.js";
+
+import type {
+   StateInstance, 
+   FunctionRegistryType, 
+   UsageCost, 
+   CrewConfigInput, 
+   MCPTransportConfig,
+} from "../types.js";
+
+import { createState }   from "../state/index.js";
+import { parseCrewConfig, parseAgentConfig } from "./agentConfig.js";
+import { StateFulAxAgentUsage } from "./agentUseCosts.js";
 
 // Define the interface for the agent configuration
-interface AgentConfig {
+interface ParsedAgentConfig {
   ai: AxAI;
   name: string;
   description: string;
@@ -188,7 +196,7 @@ class AxCrew {
    */
   createAgent = async (agentName: string): Promise<StatefulAxAgent> => {
     try {
-      const agentConfig: AgentConfig = await getAgentConfig(
+      const agentConfig: ParsedAgentConfig = await parseAgentConfig(
         agentName,
         this.crewConfig,
         this.functionsRegistry,
