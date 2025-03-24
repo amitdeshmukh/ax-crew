@@ -5,6 +5,20 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.7.0] - 2025-03-25
+
+### Added
+- New TypeScript type exports in src/index.ts for better type accessibility
+- Enhanced type definitions for metrics and cost tracking interfaces
+- Improved type documentation for core configuration interfaces
+- Support for Model Context Protocol (MCP)
+- Added `addAllAgents` method to add all agents to the crew
+- Support for streaming responses from agents
+
+### Changed
+- Reorganized type exports in src/index.ts for better code organization
+- Updated TypeScript interfaces for better type inference and documentation
+
 ## [3.6.1] - 2025-03-22
 
 ### Changed

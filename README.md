@@ -8,6 +8,8 @@ This repo simplifies development of [AxLLM](https://axllm.dev) AI Agents by usin
 - **Crew Configuration**: Define a crew of agents in a JSON file. (see [agentConfig.json](agentConfig.json) as an example)
 - **State Management**: Share state across agents in a crew, as well as with functions used by those agents.
 - **Task Execution**: Plan and execute tasks using agents in the crew.
+- **Streaming Support**: Stream agent responses in real-time for better user experience and faster feedback.
+- **Model Context Protocol (MCP)**: Support for MCP to allow agents to use MCP servers.
 
 ## Getting Started
 
@@ -378,6 +380,49 @@ const answer = managerResponse.answer;
 console.log(`\n\nPlan: ${plan}`);
 console.log(`\n\nAnswer: ${answer}`);
 ```
+
+### Streaming Responses
+
+The package supports streaming responses from agents, allowing you to receive and process agent outputs in real-time. This is particularly useful for long-running tasks or when you want to provide immediate feedback to users.
+
+```javascript
+import { AxCrew, AxCrewFunctions } from '@amitdeshmukh/ax-crew';
+
+// Create and initialize crew as shown above
+const crew = new AxCrew('./agentConfig.json', AxCrewFunctions);
+await crew.addAgentsToCrew(['Planner']);
+
+const planner = crew.agents.get("Planner");
+
+// Stream responses using the forward method
+await planner.forward(
+  { task: "Create a detailed plan for a website" },
+  {
+    onStream: (chunk) => {
+      // Process each chunk of the response as it arrives
+      console.log('Received chunk:', chunk);
+    }
+  }
+);
+
+// You can also use streaming with sub-agents
+await planner.forward(
+  ai,
+  { task: "Create a detailed plan for a website" },
+  {
+    onStream: (chunk) => {
+      process.stdout.write(chunk);
+    }
+  }
+);
+```
+
+Key streaming features:
+- Real-time response processing
+- Support for both direct and sub-agent usage
+- Customizable stream handling through callbacks
+- Compatible with all agent types and configurations
+- Maintains cost tracking and state management functionality
 
 ### Tracking Usage Costs
 
