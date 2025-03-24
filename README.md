@@ -240,25 +240,90 @@ const crew = new AxCrew(configFilePath, myFunctions);
 ```
 
 ### Adding Agents to the Crew
-You can add a sub-set of available agents from the config file to the crew by passing their names as an array to the `addAgentsToCrew` method.
+There are three ways to add agents to your crew, each offering different levels of control:
 
-Ensure that:
-  - agents are defined in the configuration file before adding them to the crew. 
-  - agents added in the right order (an error will be thrown if an agent is added before its dependent agents).
-
-For example, the `Manager` agent in the configuration file depends on the `Planner` and `Calculator` agents. So the `Planner` and `Calculator` agents must be added to the crew before the `Manager` agent can be added.
-
-Agents can be configured with any functions from the `FunctionRegistry` available to the crew.
+#### Method 1: Add All Agents Automatically
+This is the simplest method that automatically handles all dependencies:
 
 ```javascript
-// Add agents by providing their names
-const agentNames = ['Planner', 'Calculator', 'Manager'];
-const agents = crew.addAgentsToCrew(agentNames);
+// Initialize all agents defined in the config
+await crew.addAllAgents();
 
 // Get agent instances
-const Planner = agents.get("Planner");
-const Manager = agents.get("Manager");
+const planner = crew.agents?.get("Planner");
+const manager = crew.agents?.get("Manager");
 ```
+
+This method:
+- Reads all agents from your configuration
+- Automatically determines the correct initialization order based on dependencies
+- Initializes all agents in the proper sequence
+- Throws an error if there are circular dependencies
+
+#### Method 2: Add Multiple Agents with Dependencies
+This method allows you to initialize a subset of agents while still handling dependencies automatically:
+
+```javascript
+// Add multiple agents - dependencies will be handled automatically
+await crew.addAgentsToCrew(['Manager', 'Planner', 'Calculator']);
+
+// Or add them in multiple steps - order doesn't matter as dependencies are handled
+await crew.addAgentsToCrew(['Calculator']); // Will be initialized first
+await crew.addAgentsToCrew(['Manager']);    // Will initialize Planner first if it's a dependency
+```
+
+This method:
+- Takes an array of agent names you want to initialize
+- Automatically handles dependencies even if not explicitly included
+- Initializes agents in the correct order regardless of the order specified
+- Throws an error if required dependencies are missing or if there are circular dependencies
+
+#### Method 3: Add Individual Agents
+This method gives you the most control but requires manual dependency management:
+
+```javascript
+// Add agents one by one - you must handle dependencies manually
+await crew.addAgent('Calculator'); // Add base agent first
+await crew.addAgent('Planner');    // Then its dependent
+await crew.addAgent('Manager');    // Then agents that depend on both
+```
+
+This method:
+- Gives you full control over the initialization process
+- Requires you to handle dependencies manually
+- Throws an error if you try to initialize an agent before its dependencies
+
+#### Dependency Handling
+The crew system automatically handles agent dependencies in the following ways:
+
+1. **Explicit Dependencies**: Defined in the agent config using the `agents` field:
+```javascript
+{
+  name: "Manager",
+  // ... other config ...
+  agents: ["Planner", "Calculator"] // Manager depends on these agents
+}
+```
+
+2. **Initialization Order**: 
+   - Base agents (no dependencies) are initialized first
+   - Dependent agents are initialized only after their dependencies
+   - Circular dependencies are detected and reported
+
+3. **Error Handling**:
+   - Missing dependencies are reported with clear error messages
+   - Circular dependencies are detected and reported
+   - Invalid agent names or configurations are caught early
+
+4. **State Management**:
+   - All initialized agents within a crew share the same state
+   - Dependencies can access and modify shared state
+   - State persists across all initialization methods
+
+Choose the method that best fits your needs:
+- Use `addAllAgents()` for simple cases where you want all agents
+- Use `addAgentsToCrew()` when you need a subset of agents with automatic dependency handling
+- Use `addAgent()` when you need fine-grained control over the initialization process
 
 ### State Management
 

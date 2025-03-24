@@ -225,9 +225,44 @@ class AxCrew {
    */
   async addAgentsToCrew(agentNames: string[]): Promise<Map<string, StatefulAxAgent> | null> {
     try {
-      await Promise.all(
-        agentNames.map(agentName => this.addAgent(agentName))
-      );
+      // Parse the crew config to get agent dependencies
+      const parsedConfig = parseCrewConfig(this.crewConfig);
+      const dependencyMap = new Map<string, string[]>();
+      parsedConfig.crew.forEach(agent => {
+        dependencyMap.set(agent.name, agent.agents || []);
+      });
+
+      // Function to check if all dependencies are initialized
+      const areDependenciesInitialized = (agentName: string): boolean => {
+        const dependencies = dependencyMap.get(agentName) || [];
+        return dependencies.every(dep => this.agents?.has(dep));
+      };
+
+      // Initialize agents sequentially based on dependencies
+      const initializedAgents = new Set<string>();
+      
+      while (initializedAgents.size < agentNames.length) {
+        let madeProgress = false;
+
+        for (const agentName of agentNames) {
+          // Skip if already initialized
+          if (initializedAgents.has(agentName)) continue;
+
+          // Check if all dependencies are initialized
+          if (areDependenciesInitialized(agentName)) {
+            await this.addAgent(agentName);
+            initializedAgents.add(agentName);
+            madeProgress = true;
+          }
+        }
+
+        // If we couldn't initialize any agents in this iteration, we have a circular dependency
+        if (!madeProgress) {
+          const remaining = agentNames.filter(agent => !initializedAgents.has(agent));
+          throw new Error(`Failed to initialize agents due to missing dependencies: ${remaining.join(', ')}`);
+        }
+      }
+
       return this.agents;
     } catch (error) {
       throw error;
@@ -236,16 +271,54 @@ class AxCrew {
 
   async addAllAgents(): Promise<Map<string, StatefulAxAgent> | null> {
     try {
-      // Parse the crew config and get all agent names
+      // Parse the crew config and get all agent configs
       const parsedConfig = parseCrewConfig(this.crewConfig);
-      const agentNames = parsedConfig.crew.map(agent => agent.name);
       
-      // Add all agents to the crew
-      return await this.addAgentsToCrew(agentNames);
+      // Create a map of agent dependencies
+      const dependencyMap = new Map<string, string[]>();
+      parsedConfig.crew.forEach(agent => {
+        dependencyMap.set(agent.name, agent.agents || []);
+      });
+
+      // Function to check if all dependencies are initialized
+      const areDependenciesInitialized = (agentName: string): boolean => {
+        const dependencies = dependencyMap.get(agentName) || [];
+        return dependencies.every(dep => this.agents?.has(dep));
+      };
+
+      // Get all agent names
+      const allAgents = parsedConfig.crew.map(agent => agent.name);
+      const initializedAgents = new Set<string>();
+
+      // Keep trying to initialize agents until all are done or we can't make progress
+      while (initializedAgents.size < allAgents.length) {
+        let madeProgress = false;
+
+        for (const agentName of allAgents) {
+          // Skip if already initialized
+          if (initializedAgents.has(agentName)) continue;
+
+          // Check if all dependencies are initialized
+          if (areDependenciesInitialized(agentName)) {
+            await this.addAgent(agentName);
+            initializedAgents.add(agentName);
+            madeProgress = true;
+          }
+        }
+
+        // If we couldn't initialize any agents in this iteration, we have a circular dependency
+        if (!madeProgress) {
+          const remaining = allAgents.filter(agent => !initializedAgents.has(agent));
+          throw new Error(`Circular dependency detected or missing dependencies for agents: ${remaining.join(', ')}`);
+        }
+      }
+
+      return this.agents;
     } catch (error) {
       throw error;
     }
   }
+
   /**
    * Cleans up the crew by dereferencing agents and resetting the state.
    */

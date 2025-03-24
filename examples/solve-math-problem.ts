@@ -1,4 +1,4 @@
-import { AxCrew } from "@amitdeshmukh/ax-crew";
+import { AxCrew } from "../dist/index.js";
 
 // Define the crew configuration
 const config = {
@@ -32,7 +32,7 @@ const config = {
         temperature: 0,
       },
       options: {
-        debug: false,
+        debug: true,
       },
       agents: ["MathAgent"]
     },
@@ -43,11 +43,12 @@ const config = {
 const crew = new AxCrew(config);
 
 // Add the agents to the crew
-const agents = crew.addAgentsToCrew(["MathAgent", "ManagerAgent"]);
+await crew.addAgentsToCrew(["MathAgent"]);
+await crew.addAgentsToCrew(["ManagerAgent"]);
 
 // Get agent instances
-const managerAgent = agents?.get("ManagerAgent");
-const mathAgent = agents?.get("MathAgent");
+const managerAgent = crew.agents?.get("ManagerAgent");
+const mathAgent = crew.agents?.get("MathAgent");
 
 const userQuery: string =
   "who is considered as the father of the iphone and what is the 7th root of their year of birth (precision to minimum 5 decimal places)";
@@ -64,8 +65,6 @@ const main = async (): Promise<void> => {
     // Print usage costs
     console.log("\nUsage:\n+++++++++++++++++++++++++++++++++");
     console.log("Manager Agent:", JSON.stringify(managerAgent.getAccumulatedCosts(), null, 2));
-    console.log("Math Agent:", JSON.stringify(mathAgent.getLastUsageCost(), null, 2));
-    console.log("Math Agent Accumulated Costs:", JSON.stringify(mathAgent.getAccumulatedCosts(), null, 2));
     console.log("Total Cost:", JSON.stringify(crew.getAggregatedCosts(), null, 2));
   }
 };
