@@ -11,7 +11,7 @@ const agentConfig = {
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-5-sonnet-latest"
+        model: "claude-3-haiku-20240307"
       },
       options: {
         debug: true,
@@ -25,7 +25,7 @@ const agentConfig = {
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-5-sonnet-latest"
+        model: "claude-3-haiku-20240307"
       },
       options: {
         debug: true,
