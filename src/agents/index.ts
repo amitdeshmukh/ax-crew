@@ -5,6 +5,8 @@ import type {
   AxAgentic,
   AxFunction,
   AxProgramForwardOptions,
+  AxProgramStreamingForwardOptions,
+  AxGenStreamingOut,
 } from "@ax-llm/ax";
 import { getAgentConfig, parseCrewConfig } from "./agentConfig.js";
 import type { CrewConfigInput, MCPTransportConfig } from "./agentConfig.js";
@@ -94,6 +96,41 @@ class StatefulAxAgent extends AxAgent<any, any> {
     }
 
     return result;
+  }
+
+  // Add streaming forward method overloads
+  streamingForward(values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions>): AxGenStreamingOut<any>;
+  streamingForward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions>): AxGenStreamingOut<any>;
+  
+  // Implementation
+  streamingForward(
+    first: Record<string, any> | AxAI,
+    second?: Record<string, any> | Readonly<AxProgramStreamingForwardOptions>,
+    third?: Readonly<AxProgramStreamingForwardOptions>
+  ): AxGenStreamingOut<any> {
+    let streamingResult: AxGenStreamingOut<any>;
+    
+    if ('apiURL' in first) {
+      streamingResult = super.streamingForward(this.axai, second as Record<string, any>, third);
+    } else {
+      streamingResult = super.streamingForward(this.axai, first, second as Readonly<AxProgramStreamingForwardOptions>);
+    }
+
+    // Create a new async generator that tracks costs after completion
+    const wrappedGenerator = (async function*(this: StatefulAxAgent) {
+      try {
+        for await (const chunk of streamingResult) {
+          yield chunk;
+        }
+      } finally {
+        const cost = this.getLastUsageCost();
+        if (cost) {
+          StateFulAxAgentUsage.trackCostInState(this.agentName, cost, this.state);
+        }
+      }
+    }).bind(this)();
+
+    return wrappedGenerator as AxGenStreamingOut<any>;
   }
 
   // Get the usage cost for the most recent run of the agent

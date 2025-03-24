@@ -82,7 +82,7 @@ const main = async () => {
   const crew = new AxCrew(config, customFunctions);
 
   // Add agents to crew
-  const agents = crew.addAgentsToCrew([
+  const agents = await crew.addAgentsToCrew([
     'SearchQueryGenerator', 
     'GoogleSearch', 
     'BlogPostWriter', 
