@@ -1,62 +1,12 @@
-import type { StateInstance } from '../state/index.js';
 import { Decimal } from 'decimal.js';
-
-/**
- * The usage metrics of the model.
- * promptTokens: number;
- * completionTokens: number;
- */
-export interface ModelUsage {
-  promptTokens: number;
-  completionTokens: number;
-}
-
-/**
- * The published cost for using the model.
- * promptTokenCostPer1M: number;
- * completionTokenCostPer1M: number;
- */
-export interface ModelInfo {
-  promptTokenCostPer1M: number;
-  completionTokenCostPer1M: number;
-}
-
-/**
- * The cost incurred for using the model.
- * 
- */
-export interface UsageCost {
-  promptCost: string;
-  completionCost: string;
-  totalCost: string;
-  tokenMetrics: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  }
-}
-
-/**
- * Aggregated metrics from all agent and sub-agent invocations.
- * 
- */
-export interface AggregatedMetrics {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  promptCost: string;
-  completionCost: string;
-}
-
-/**
- * The incurred costs from all agent and sub-agent invocations.
- * 
- */
-export interface AggregatedCosts {
-  totalCost: string;
-  byAgent: Record<string, UsageCost>;
-  aggregatedMetrics: AggregatedMetrics;
-}
+import type { 
+  StateInstance, 
+  ModelUsage, 
+  ModelInfo,
+  UsageCost, 
+  AggregatedMetrics, 
+  AggregatedCosts 
+} from '../types.js';
 
 /**
  * Utility class to handle usage related functionality.
@@ -151,7 +101,7 @@ export class StateFulAxAgentUsage {
         totalTokens: totalPromptTokens + totalCompletionTokens,
         promptCost: totalPromptCost.toDP(10).toString(),
         completionCost: totalCompletionCost.toDP(10).toString()
-      }
+      } as AggregatedMetrics
     };
   }
 

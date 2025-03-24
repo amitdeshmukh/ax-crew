@@ -1,9 +1,19 @@
 import fs from 'fs';
+// Import all the providers
 import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether } from '@ax-llm/ax';
-import type { AxModelConfig, AxFunction, AxSignature } from '@ax-llm/ax';
+// Import Ax types
+import type { AxFunction } from '@ax-llm/ax';
+// Import the MCP client and transports
 import { AxMCPClient, AxMCPStdioTransport, AxMCPHTTPTransport } from '@ax-llm/ax'
 import { PROVIDER_API_KEYS } from '../config/index.js';
-import { FunctionRegistryType } from '../functions/index.js';
+import type { 
+  AgentConfig,
+  CrewConfigInput,
+  FunctionRegistryType, 
+  MCPTransportConfig, 
+  MCPStdioTransportConfig, 
+  MCPHTTPTransportConfig 
+} from '../types.js';
 
 // Define a mapping from provider names to their respective constructors
 const AIConstructors: Record<string, any> = {
@@ -23,29 +33,6 @@ const AIConstructors: Record<string, any> = {
 // Provider type
 export type Provider = keyof typeof AIConstructors;
 
-/**
- * Config for an STDIO MCP server.
- * 
- * @property {string} command - The command to run the MCP server.
- * @property {string[]} args - Arguments to pass to the MCP server.
- * @property {NodeJS.ProcessEnv} env - Environment variables to pass to the MCP server.
- */
-export interface MCPStdioTransportConfig {
-  command: string
-  args?: string[]
-  env?: NodeJS.ProcessEnv
-}
-
-export interface MCPHTTPTransportConfig {
-  sseUrl: string
-}
-/**
- * Config for an MCP server.
- * 
- * @property {MCPStdioTransportConfig | MCPHTTPTransportConfig} config - The config for the MCP server. Config can be either a stdio or http transport.
- */
-export type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPTransportConfig
-
 // Type guard to check if config is stdio transport
 export function isStdioTransport(config: MCPTransportConfig): config is MCPStdioTransportConfig {
   return 'command' in config;
@@ -54,39 +41,6 @@ export function isStdioTransport(config: MCPTransportConfig): config is MCPStdio
 // Type guard to check if config is http transport
 export function isHTTPTransport(config: MCPTransportConfig): config is MCPHTTPTransportConfig {
   return 'sseUrl' in config;
-}
-
-/**
- * The configuration for an agent.
- * 
- * @property {string} name - Name of the agent.
- * @property {string} description - Description of the agent.
- * @property {string | AxSignature} signature - The signature for the agent in DSPy format.
- * @property {Provider} provider - LLM provider name.
- * @property {string} providerKeyName - The name of the provider key (read from environment variables).
- * @property {AxModelConfig & { model: string }} ai - The AI model configuration to be passed to the agent.
- * @property {boolean} debug - Whether to enable debug mode.
- * @property {string} apiURL - Set this if you are using a custom API URL e.g. ollama on localhost.
- * @property {Record<string, any>} options - Agent options. Refer to the Ax documentation for more details.
- * @property {string[]} functions - Function names to be used by the agent.
- * @property {string[]} agents - Sub-agent available to the agent.
- * @property {Record<string, any>[]} examples - DSPy examples for the agent to learn from.
- * @property {Record<string, MCPTransportConfig>} mcpServers - MCP servers configuration.
- */
-export interface AgentConfig {
-  name: string;
-  description: string;
-  signature: string | AxSignature;
-  provider: Provider;
-  providerKeyName?: string;
-  ai: AxModelConfig & { model: string };
-  debug?: boolean;
-  apiURL?: string;
-  options?: Record<string, any>;
-  functions?: string[];
-  agents?: string[];
-  examples?: Array<Record<string, any>>;
-  mcpServers?: Record<string, MCPTransportConfig>;
 }
 
 /**
@@ -148,40 +102,6 @@ Original error: ${error.message}`;
   return `Error parsing agent configuration: ${error.message}`;
 };
 
-/**
- * The input type for the agent config. This can be a path to a JSON file or a JSON object.
- */
-type CrewConfigInput = string | { crew: AgentConfig[] };
-
-/**
- * Parses and returns the AxCrew config from either a JSON config file or a direct JSON object.
- * @param {CrewConfigInput} input - Either a path to the agent config json file or a JSON object with crew configuration.
- * @returns {Object} The parsed crew config.
- * @throws Will throw an error if reading/parsing fails.
- */
-export const parseCrewConfig = (input: CrewConfigInput): { crew: AgentConfig[] } => {
-  try {
-    if (typeof input === 'string') {
-      // Handle file path input
-      const fileContents = fs.readFileSync(input, 'utf8');
-      const parsedConfigs = JSON.parse(fileContents) as { crew: AgentConfig[] };
-      return parsedConfigs;
-    } else {
-      // Handle direct JSON object input
-      return input;
-    }
-  } catch (e) {
-    if (e instanceof Error) {
-      if (typeof input === 'string') {
-        const formattedError = getFormattedJSONError(e, fs.readFileSync(input, 'utf8'));
-        throw new Error(formattedError);
-      }
-      throw new Error(`Error parsing agent configuration: ${e.message}`);
-    }
-    throw e;
-  }
-};
-
 const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFunction[]> => {
   const mcpServers = agentConfigData.mcpServers;
   if (!mcpServers || Object.keys(mcpServers).length === 0) {
@@ -221,9 +141,37 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
 };
 
 /**
- * Initializes the AI agent using the specified agent name and configuration.
- * This function parses the agent's configuration, validates the presence of the necessary API key,
- * and creates an instance of the AI agent with the appropriate settings.
+ * Parses and returns the AxCrew config from either a JSON config file or a direct JSON object.
+ * @param {CrewConfigInput} input - Either a path to the agent config json file or a JSON object with crew configuration.
+ * @returns {Object} The parsed crew config.
+ * @throws Will throw an error if reading/parsing fails.
+ */
+const parseCrewConfig = (input: CrewConfigInput): { crew: AgentConfig[] } => {
+  try {
+    if (typeof input === 'string') {
+      // Handle file path input
+      const fileContents = fs.readFileSync(input, 'utf8');
+      const parsedConfig = JSON.parse(fileContents) as { crew: AgentConfig[] };
+      return parsedConfig;
+    } else {
+      // Handle direct JSON object input
+      return input;
+    }
+  } catch (e) {
+    if (e instanceof Error) {
+      if (typeof input === 'string') {
+        const formattedError = getFormattedJSONError(e, fs.readFileSync(input, 'utf8'));
+        throw new Error(formattedError);
+      }
+      throw new Error(`Error parsing agent configuration: ${e.message}`);
+    }
+    throw e;
+  }
+};
+
+/**
+ * Parses the agent's configuration, validates the presence of the necessary API key,
+ * and creates an instance of the Agent with the appropriate settings.
  *
  * @param {string} agentName - The identifier for the AI agent to be initialized.
  * @param {CrewConfigInput} crewConfig - Either a file path to the JSON configuration or a JSON object with crew configuration.
@@ -233,7 +181,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
  * @throws {Error} Throws an error if the agent configuration is missing, the provider is unsupported,
  * the API key is not found, or the provider key name is not specified in the configuration.
  */
-const getAgentConfig = async (
+const parseAgentConfig = async (
   agentName: string, 
   crewConfig: CrewConfigInput,
   functions: FunctionRegistryType,
@@ -322,4 +270,7 @@ const getAgentConfig = async (
   }
 };
 
-export { getAgentConfig, CrewConfigInput };
+export { 
+  parseAgentConfig,
+  parseCrewConfig
+};
