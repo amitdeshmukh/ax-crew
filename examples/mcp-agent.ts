@@ -78,7 +78,7 @@ await crew.addAllAgents();
 const managerAgent = crew.agents?.get("ManagerAgent");
 const mapsAgent = crew.agents?.get("MapsAgent");
 
-const userQuery: string = "Are there any cool bars around C/Nord 17, 08004 within 5 min walking distance";
+const userQuery: string = "Are there any cool bars around the Eiffel Tower in Paris within 5 min walking distance";
 
 console.log(`\n\nQuestion: ${userQuery}`);
 

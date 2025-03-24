@@ -10,7 +10,11 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsc --outDir dist",
-    "release": "npm run build && npm publish --access public"
+    "release": "npm run build && npm publish --access public",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "decimal.js": "^10.5.0",
@@ -22,9 +26,13 @@
     "@ax-llm/ax": "^11.0.27"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
     "@types/node": "^20.14.9",
     "@types/uuid": "^10.0.0",
-    "typescript": "^5.5.3"
+    "@vitest/coverage-v8": "^3.0.9",
+    "@vitest/ui": "^3.0.9",
+    "typescript": "^5.5.3",
+    "vitest": "^3.0.9"
   },
   "homepage": "https://github.com/amitdeshmukh/ax-crew#readme",
   "repository": {

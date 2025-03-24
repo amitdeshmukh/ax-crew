@@ -151,8 +151,8 @@ const parseCrewConfig = (input: CrewConfigInput): { crew: AgentConfig[] } => {
     if (typeof input === 'string') {
       // Handle file path input
       const fileContents = fs.readFileSync(input, 'utf8');
-      const parsedConfigs = JSON.parse(fileContents) as { crew: AgentConfig[] };
-      return parsedConfigs;
+      const parsedConfig = JSON.parse(fileContents) as { crew: AgentConfig[] };
+      return parsedConfig;
     } else {
       // Handle direct JSON object input
       return input;

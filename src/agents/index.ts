@@ -181,6 +181,18 @@ class AxCrew {
     functionsRegistry: FunctionRegistryType = {},
     crewId: string = uuidv4()
   ) {
+    // Basic validation of crew configuration
+    if (!crewConfig || typeof crewConfig !== 'object' || !('crew' in crewConfig)) {
+      throw new Error('Invalid crew configuration');
+    }
+
+    // Validate each agent in the crew
+    crewConfig.crew.forEach(agent => {
+      if (!agent.name || agent.name.trim() === '') {
+        throw new Error('Agent name cannot be empty');
+      }
+    });
+
     this.crewConfig = crewConfig;
     this.functionsRegistry = functionsRegistry;
     this.crewId = crewId;
