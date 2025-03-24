@@ -1,4 +1,5 @@
-import { AxCrew } from "@amitdeshmukh/ax-crew";
+import { AxCrew } from "../dist/index.js";
+import { AxCrewFunctions } from "../src/functions/index.js";
 
 // Example agent configuration
 const agentConfig = {
@@ -15,6 +16,7 @@ const agentConfig = {
       options: {
         debug: true,
       },
+      functions: ["CurrentDateTime"]
     },
     {
       name: "writer",
@@ -36,10 +38,11 @@ const agentConfig = {
 // Example usage
 async function main() {
   // Initialize the crew
-  const crew = new AxCrew(agentConfig);
+  const crew = new AxCrew(agentConfig, AxCrewFunctions);
   
   // Add agents to the crew
-  crew.addAgentsToCrew(["researcher", "writer"]);
+  await crew.addAgentsToCrew(["researcher"]); // Add researcher first
+  await crew.addAgentsToCrew(["writer"]); // Then add writer
   
   // Get references to our agents
   const writer = crew.agents?.get("writer");

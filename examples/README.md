@@ -93,7 +93,36 @@ WORDPRESS_USERNAME=your_username
 WORDPRESS_APP_PASSWORD=your_application_password
 ```
 
-### 4. AxCrew Basic Usage
+### 4. MCP Agent with Google Maps
+[`mcp-agent.ts`](./mcp-agent.ts)
+
+Shows how to use Model Context Protocol (MCP) servers to integrate external APIs:
+- Uses Google Maps API through MCP server
+- Demonstrates agent dependencies (ManagerAgent using MapsAgent)
+- Shows how to handle location-based queries
+- Includes cost tracking across multiple agents
+
+**Required Dependencies:**
+```bash
+npm install @modelcontextprotocol/server-google-maps
+```
+
+**Additional Configuration:**
+```env
+ANTHROPIC_API_KEY=your_anthropic_key
+OPENAI_API_KEY=your_openai_key
+GOOGLE_MAPS_API_KEY=your_google_maps_key
+```
+
+```typescript
+const userQuery = "Are there any cool bars around the Eiffel Tower  within 5 min walking distance";
+```
+
+Key features:
+- Integration with external APIs via MCP servers
+- Cost tracking across agents
+
+### 5. AxCrew Basic Usage
 [`axcrew.ts`](./axcrew.ts)
 
 A basic example showing core AxCrew features:
@@ -154,6 +183,10 @@ crew.resetCosts();
 3. Use appropriate model temperatures based on your use case
 4. Leverage shared state for better agent coordination
 5. Consider rate limits of the AI providers
+6. When using MCP servers:
+   - Secure API keys using environment variables
+   - Handle API rate limits appropriately
+   - Consider fallback options for API failures
 
 ## Contributing
 
@@ -163,3 +196,7 @@ Feel free to contribute more examples by submitting a pull request. Make sure to
 3. Add appropriate error handling
 4. Include cost tracking
 5. Add your example to this README
+6. If using external APIs:
+   - Document required API keys
+   - Include example environment variables
+   - Handle API errors gracefully

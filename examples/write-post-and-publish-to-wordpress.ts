@@ -1,7 +1,7 @@
 // NOTE: For a more complete example of a crew that can research a topic, write a post and publish to WordPress, please see ./write-post-and-publish-to-wordpress.ts
 
-import { AxCrew } from "@amitdeshmukh/ax-crew";
-import type { FunctionRegistryType } from "@amitdeshmukh/ax-crew";
+import { AxCrew } from "../dist/index.js";
+import type { FunctionRegistryType } from "../dist/index.js";
 import { WordPressPost } from "@ax-crew/tools-wordpress";
 
 // AxCrew configuration
@@ -82,7 +82,7 @@ const main = async () => {
   const crew = new AxCrew(config, customFunctions);
 
   // Add agents to crew
-  const agents = crew.addAgentsToCrew([
+  const agents = await crew.addAgentsToCrew([
     'SearchQueryGenerator', 
     'GoogleSearch', 
     'BlogPostWriter', 

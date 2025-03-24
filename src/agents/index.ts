@@ -5,15 +5,17 @@ import type {
   AxAgentic,
   AxFunction,
   AxProgramForwardOptions,
+  AxProgramStreamingForwardOptions,
+  AxGenStreamingOut,
 } from "@ax-llm/ax";
-import { getAgentConfigParams } from "./agentConfig.js";
-import type { AgentConfigInput } from "./agentConfig.js";
+import { getAgentConfig, parseCrewConfig } from "./agentConfig.js";
+import type { CrewConfigInput, MCPTransportConfig } from "./agentConfig.js";
 import { FunctionRegistryType } from "../functions/index.js";
 import { createState, StateInstance } from "../state/index.js";
 import { StateFulAxAgentUsage, UsageCost } from "./agentUseCosts.js";
 
 // Define the interface for the agent configuration
-interface AgentConfigParams {
+interface AgentConfig {
   ai: AxAI;
   name: string;
   description: string;
@@ -23,11 +25,12 @@ interface AgentConfigParams {
     | (new (state: Record<string, any>) => { toFunction: () => AxFunction })
     | undefined
   )[];
+  mcpServers?: Record<string, MCPTransportConfig>;
   subAgentNames: string[];
   examples?: Array<Record<string, any>>;
 }
 
-// Extend the AxAgent class to include shared state functionality
+// Extend the AxAgent class from ax-llm
 class StatefulAxAgent extends AxAgent<any, any> {
   state: StateInstance;
   axai: any;
@@ -42,6 +45,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
       agents?: AxAgentic[] | undefined;
       functions?: (AxFunction | (() => AxFunction))[] | undefined;
       examples?: Array<Record<string, any>> | undefined;
+      mcpServers?: Record<string, MCPTransportConfig> | undefined;
     }>,
     state: StateInstance
   ) {
@@ -94,6 +98,41 @@ class StatefulAxAgent extends AxAgent<any, any> {
     return result;
   }
 
+  // Add streaming forward method overloads
+  streamingForward(values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions>): AxGenStreamingOut<any>;
+  streamingForward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions>): AxGenStreamingOut<any>;
+  
+  // Implementation
+  streamingForward(
+    first: Record<string, any> | AxAI,
+    second?: Record<string, any> | Readonly<AxProgramStreamingForwardOptions>,
+    third?: Readonly<AxProgramStreamingForwardOptions>
+  ): AxGenStreamingOut<any> {
+    let streamingResult: AxGenStreamingOut<any>;
+    
+    if ('apiURL' in first) {
+      streamingResult = super.streamingForward(this.axai, second as Record<string, any>, third);
+    } else {
+      streamingResult = super.streamingForward(this.axai, first, second as Readonly<AxProgramStreamingForwardOptions>);
+    }
+
+    // Create a new async generator that tracks costs after completion
+    const wrappedGenerator = (async function*(this: StatefulAxAgent) {
+      try {
+        for await (const chunk of streamingResult) {
+          yield chunk;
+        }
+      } finally {
+        const cost = this.getLastUsageCost();
+        if (cost) {
+          StateFulAxAgentUsage.trackCostInState(this.agentName, cost, this.state);
+        }
+      }
+    }).bind(this)();
+
+    return wrappedGenerator as AxGenStreamingOut<any>;
+  }
+
   // Get the usage cost for the most recent run of the agent
   getLastUsageCost(): UsageCost | null {
     const { modelUsage, modelInfo, defaults } = this.axai;
@@ -117,7 +156,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
  * Represents a crew of agents with shared state functionality.
  */
 class AxCrew {
-  private agentConfig: AgentConfigInput;
+  private crewConfig: CrewConfigInput;
   functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
@@ -125,16 +164,16 @@ class AxCrew {
 
   /**
    * Creates an instance of AxCrew.
-   * @param {AgentConfigInput} agentConfig - Either a path to the agent config file or a JSON object with crew configuration.
+   * @param {CrewConfigInput} crewConfig - Either a path to the agent config file or a JSON object with crew configuration.
    * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
   constructor(
-    agentConfig: AgentConfigInput,
+    crewConfig: CrewConfigInput,
     functionsRegistry: FunctionRegistryType = {},
     crewId: string = uuidv4()
   ) {
-    this.agentConfig = agentConfig;
+    this.crewConfig = crewConfig;
     this.functionsRegistry = functionsRegistry;
     this.crewId = crewId;
     this.agents = new Map<string, StatefulAxAgent>();
@@ -147,18 +186,17 @@ class AxCrew {
    * @returns {StatefulAxAgent} The created StatefulAxAgent instance.
    * @throws Will throw an error if the agent creation fails.
    */
-  createAgent = (agentName: string): StatefulAxAgent => {
+  createAgent = async (agentName: string): Promise<StatefulAxAgent> => {
     try {
-      const agentConfigParams: AgentConfigParams = getAgentConfigParams(
+      const agentConfig: AgentConfig = await getAgentConfig(
         agentName,
-        this.agentConfig,
+        this.crewConfig,
         this.functionsRegistry,
         this.state
       );
 
       // Destructure with type assertion
-      const { ai, name, description, signature, functions, subAgentNames, examples } =
-        agentConfigParams;
+      const { ai, name, description, signature, functions, subAgentNames, examples } = agentConfig;
 
       // Get subagents for the AI agent
       const subAgents = subAgentNames.map((subAgentName: string) => {
@@ -198,14 +236,20 @@ class AxCrew {
    * Adds an agent to the crew by name.
    * @param {string} agentName - The name of the agent to add.
    */
-  addAgent(agentName: string): void {
+  async addAgent(agentName: string): Promise<void> {
     try {
+      if (!this.agents) {
+        this.agents = new Map<string, StatefulAxAgent>();
+      }
+      if (!this.agents.has(agentName)) {
+        this.agents.set(agentName, await this.createAgent(agentName));
+      }
       if (this.agents && !this.agents.has(agentName)) {
-        this.agents.set(agentName, this.createAgent(agentName));
+        this.agents.set(agentName, await this.createAgent(agentName));
       }
     } catch (error) {
       console.error(`Failed to create agent '${agentName}':`);
-      throw error;
+      throw new Error(`Failed to add agent ${agentName}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -216,11 +260,96 @@ class AxCrew {
    * @param {string[]} agentNames - An array of agent names to configure.
    * @returns {Map<string, StatefulAxAgent> | null} A map of agent names to their corresponding instances.
    */
-  addAgentsToCrew(agentNames: string[]): Map<string, StatefulAxAgent> | null {
+  async addAgentsToCrew(agentNames: string[]): Promise<Map<string, StatefulAxAgent> | null> {
     try {
-      agentNames.forEach((agentName) => {
-        this.addAgent(agentName);
+      // Parse the crew config to get agent dependencies
+      const parsedConfig = parseCrewConfig(this.crewConfig);
+      const dependencyMap = new Map<string, string[]>();
+      parsedConfig.crew.forEach(agent => {
+        dependencyMap.set(agent.name, agent.agents || []);
       });
+
+      // Function to check if all dependencies are initialized
+      const areDependenciesInitialized = (agentName: string): boolean => {
+        const dependencies = dependencyMap.get(agentName) || [];
+        return dependencies.every(dep => this.agents?.has(dep));
+      };
+
+      // Initialize agents sequentially based on dependencies
+      const initializedAgents = new Set<string>();
+      
+      while (initializedAgents.size < agentNames.length) {
+        let madeProgress = false;
+
+        for (const agentName of agentNames) {
+          // Skip if already initialized
+          if (initializedAgents.has(agentName)) continue;
+
+          // Check if all dependencies are initialized
+          if (areDependenciesInitialized(agentName)) {
+            await this.addAgent(agentName);
+            initializedAgents.add(agentName);
+            madeProgress = true;
+          }
+        }
+
+        // If we couldn't initialize any agents in this iteration, we have a circular dependency
+        if (!madeProgress) {
+          const remaining = agentNames.filter(agent => !initializedAgents.has(agent));
+          throw new Error(`Failed to initialize agents due to missing dependencies: ${remaining.join(', ')}`);
+        }
+      }
+
+      return this.agents;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async addAllAgents(): Promise<Map<string, StatefulAxAgent> | null> {
+    try {
+      // Parse the crew config and get all agent configs
+      const parsedConfig = parseCrewConfig(this.crewConfig);
+      
+      // Create a map of agent dependencies
+      const dependencyMap = new Map<string, string[]>();
+      parsedConfig.crew.forEach(agent => {
+        dependencyMap.set(agent.name, agent.agents || []);
+      });
+
+      // Function to check if all dependencies are initialized
+      const areDependenciesInitialized = (agentName: string): boolean => {
+        const dependencies = dependencyMap.get(agentName) || [];
+        return dependencies.every(dep => this.agents?.has(dep));
+      };
+
+      // Get all agent names
+      const allAgents = parsedConfig.crew.map(agent => agent.name);
+      const initializedAgents = new Set<string>();
+
+      // Keep trying to initialize agents until all are done or we can't make progress
+      while (initializedAgents.size < allAgents.length) {
+        let madeProgress = false;
+
+        for (const agentName of allAgents) {
+          // Skip if already initialized
+          if (initializedAgents.has(agentName)) continue;
+
+          // Check if all dependencies are initialized
+          if (areDependenciesInitialized(agentName)) {
+            await this.addAgent(agentName);
+            initializedAgents.add(agentName);
+            madeProgress = true;
+          }
+        }
+
+        // If we couldn't initialize any agents in this iteration, we have a circular dependency
+        if (!madeProgress) {
+          const remaining = allAgents.filter(agent => !initializedAgents.has(agent));
+          throw new Error(`Circular dependency detected or missing dependencies for agents: ${remaining.join(', ')}`);
+        }
+      }
+
       return this.agents;
     } catch (error) {
       throw error;
