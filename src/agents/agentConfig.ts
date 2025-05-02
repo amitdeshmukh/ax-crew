@@ -123,7 +123,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
       } else if (isHTTPTransport(mcpServerConfig)) {
         transport = new AxMCPHTTPTransport(mcpServerConfig.sseUrl);
       } else {  
-        throw new Error(`Unsupported transport type: ${mcpServerConfig}`);
+        throw new Error(`Unsupported transport type: ${JSON.stringify(mcpServerConfig)}`);
       }
 
       const mcpClient = new AxMCPClient(transport, {debug: agentConfigData.debug || false});
@@ -135,7 +135,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
     return functions;
   } catch (error) {
     initializedClients = [];
-    console.error('Error during MCP client setup:', error);
+    console.error(`Error during MCP client setup: ${error}`);
     throw error;
   }
 };

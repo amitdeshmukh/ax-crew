@@ -5,6 +5,11 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.7.1] - 2025-03-27
+
+### Fixed
+- Enhanced error reporting for unsupported transport types with proper JSON stringification
+
 ## [3.7.0] - 2025-03-25
 
 ### Added
