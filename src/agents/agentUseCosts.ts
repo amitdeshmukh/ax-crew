@@ -15,52 +15,75 @@ import type {
 export class StateFulAxAgentUsage {
   static STATE_KEY_PREFIX = 'agent_usage_';
 
-  static calculateCost(modelUsage: ModelUsage, modelInfo: ModelInfo): UsageCost {
-    const { promptTokens, completionTokens } = modelUsage;
+  static calculateCost(modelUsage: ModelUsage, modelInfo: ModelInfo): UsageCost | null {
+    // Handle both direct properties and nested tokens structure
+    const promptTokens = (modelUsage as any).tokens?.promptTokens ?? modelUsage.promptTokens;
+    const completionTokens = (modelUsage as any).tokens?.completionTokens ?? modelUsage.completionTokens;
     const { promptTokenCostPer1M, completionTokenCostPer1M } = modelInfo;
 
-    // Use Decimal for precise calculations
-    const promptCost = new Decimal(promptTokens)
-      .div(1000000)
-      .mul(promptTokenCostPer1M)
-      .toDP(10);  // Keep 10 decimal places
+    // Return null instead of throwing errors for invalid values
+    if (typeof promptTokens !== 'number' || isNaN(promptTokens) ||
+        typeof completionTokens !== 'number' || isNaN(completionTokens) ||
+        typeof promptTokenCostPer1M !== 'number' || isNaN(promptTokenCostPer1M) ||
+        typeof completionTokenCostPer1M !== 'number' || isNaN(completionTokenCostPer1M)) {
+      return null;
+    }
 
-    const completionCost = new Decimal(completionTokens)
-      .div(1000000)
-      .mul(completionTokenCostPer1M)
-      .toDP(10);
+    try {
+      // Use Decimal for precise calculations
+      const promptCost = new Decimal(promptTokens)
+        .div(1000000)
+        .mul(promptTokenCostPer1M)
+        .toDP(10);  // Keep 10 decimal places
 
-    const totalCost = promptCost.plus(completionCost).toDP(10);
+      const completionCost = new Decimal(completionTokens)
+        .div(1000000)
+        .mul(completionTokenCostPer1M)
+        .toDP(10);
 
-    return {
-      promptCost: promptCost.toString(),
-      completionCost: completionCost.toString(),
-      totalCost: totalCost.toString(),
-      tokenMetrics: {
-        promptTokens,
-        completionTokens,
-        totalTokens: promptTokens + completionTokens
-      }
-    };
+      const totalCost = promptCost.plus(completionCost).toDP(10);
+
+      return {
+        promptCost: promptCost.toString(),
+        completionCost: completionCost.toString(),
+        totalCost: totalCost.toString(),
+        tokenMetrics: {
+          promptTokens,
+          completionTokens,
+          totalTokens: promptTokens + completionTokens
+        }
+      };
+    } catch (error) {
+      // If any decimal calculation fails, return null instead of throwing
+      return null;
+    }
   }
 
-  static trackCostInState(agentName: string, cost: UsageCost, state: StateInstance) {
+  static trackCostInState(agentName: string, cost: UsageCost | null, state: StateInstance) {
+    // If cost is null, skip tracking
+    if (!cost) return;
+
     const stateKey = `${this.STATE_KEY_PREFIX}${agentName}`;
     const existingCost = state.get(stateKey) as UsageCost | undefined;
 
     if (existingCost) {
-      // Aggregate with existing cost using Decimal
-      const aggregatedCost: UsageCost = {
-        promptCost: new Decimal(existingCost.promptCost).plus(cost.promptCost).toDP(10).toString(),
-        completionCost: new Decimal(existingCost.completionCost).plus(cost.completionCost).toDP(10).toString(),
-        totalCost: new Decimal(existingCost.totalCost).plus(cost.totalCost).toDP(10).toString(),
-        tokenMetrics: {
-          promptTokens: existingCost.tokenMetrics.promptTokens + cost.tokenMetrics.promptTokens,
-          completionTokens: existingCost.tokenMetrics.completionTokens + cost.tokenMetrics.completionTokens,
-          totalTokens: existingCost.tokenMetrics.totalTokens + cost.tokenMetrics.totalTokens
-        }
-      };
-      state.set(stateKey, aggregatedCost);
+      try {
+        // Aggregate with existing cost using Decimal
+        const aggregatedCost: UsageCost = {
+          promptCost: new Decimal(existingCost.promptCost).plus(cost.promptCost).toDP(10).toString(),
+          completionCost: new Decimal(existingCost.completionCost).plus(cost.completionCost).toDP(10).toString(),
+          totalCost: new Decimal(existingCost.totalCost).plus(cost.totalCost).toDP(10).toString(),
+          tokenMetrics: {
+            promptTokens: existingCost.tokenMetrics.promptTokens + cost.tokenMetrics.promptTokens,
+            completionTokens: existingCost.tokenMetrics.completionTokens + cost.tokenMetrics.completionTokens,
+            totalTokens: existingCost.tokenMetrics.totalTokens + cost.tokenMetrics.totalTokens
+          }
+        };
+        state.set(stateKey, aggregatedCost);
+      } catch (error) {
+        // If aggregation fails, just use the new cost
+        state.set(stateKey, cost);
+      }
     } else {
       // First time tracking this agent's cost
       state.set(stateKey, cost);

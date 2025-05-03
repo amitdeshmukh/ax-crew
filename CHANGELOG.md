@@ -5,6 +5,16 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.8.1] - 2024-03-28
+
+### Added
+- Enhanced type definitions for model usage metrics with nested token structure support
+
+### Changed
+- Improved error handling and robustness in cost calculations
+- Better null handling in usage cost tracking
+- Updated type definitions in `src/types.ts` to support both direct and nested token structures
+
 ## [3.7.1] - 2025-03-27
 
 ### Fixed

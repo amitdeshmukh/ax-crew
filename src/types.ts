@@ -36,13 +36,24 @@ type FunctionRegistryType = {
 
 /**
  * The usage metrics of the model.
- * promptTokens: number;
- * completionTokens: number;
+ * Supports both direct token properties and nested tokens structure
  */
-interface ModelUsage {
-  promptTokens: number;
-  completionTokens: number;
+interface ModelUsageBase {
+  promptTokens?: number;
+  completionTokens?: number;
 }
+
+interface ModelUsageNested {
+  ai?: string;
+  model?: string;
+  tokens?: {
+    totalTokens?: number;
+    promptTokens: number;
+    completionTokens: number;
+  };
+}
+
+type ModelUsage = ModelUsageBase & ModelUsageNested;
 
 /**
  * The published cost for using the model.
