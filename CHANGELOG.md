@@ -5,6 +5,16 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.9.0] - 2025-01-27
+
+### Fixed
+- Updated @ax-llm/ax package to 11.0.47
+- Updated TypeScript target from ES2020 to ES2022 to resolve `ErrorOptions` type compatibility issue with @ax-llm/ax package
+- Improved build process compatibility with latest TypeScript type definitions
+
+### Changed
+- Enhanced TypeScript configuration for better compatibility with modern type definitions
+
 ## [3.8.1] - 2024-03-28
 
 ### Added
