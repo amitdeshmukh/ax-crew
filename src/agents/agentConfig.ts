@@ -1,6 +1,6 @@
 import fs from 'fs';
 // Import all the providers
-import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether } from '@ax-llm/ax';
+import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether, AxAIReka, AxAIGrok } from '@ax-llm/ax';
 // Import Ax types
 import type { AxFunction } from '@ax-llm/ax';
 // Import the MCP client and transports
@@ -27,7 +27,9 @@ const AIConstructors: Record<string, any> = {
   'mistral': AxAIMistral,
   'ollama': AxAIOllama,
   'openai': AxAIOpenAI,
-  'together': AxAITogether
+  'together': AxAITogether,
+  'reka': AxAIReka,
+  'grok': AxAIGrok
 };
 
 // Provider type

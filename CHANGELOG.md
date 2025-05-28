@@ -5,7 +5,20 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
-## [3.9.0] - 2025-01-27
+## [3.10.0] - 2025-05-28
+
+### Added
+- Support for Reka AI models through `AxAIReka` provider
+- Support for Grok (xAI) models through `AxAIGrok` provider
+- Added `REKA_API_KEY` and `GROK_API_KEY` environment variable support
+- Added `DEEPSEEK_API_KEY` environment variable support for DeepSeek models
+- Enhanced provider configuration to include all supported AI providers
+
+### Changed
+- Updated `src/config/index.ts` to include API keys for all supported providers
+- Improved provider API key management for better consistency across all supported models
+
+## [3.9.0] - 2025-05-28
 
 ### Fixed
 - Updated @ax-llm/ax package to 11.0.47
