@@ -4,7 +4,7 @@ import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, A
 // Import Ax types
 import type { AxFunction } from '@ax-llm/ax';
 // Import the MCP client and transports
-import { AxMCPClient, AxMCPStdioTransport, AxMCPHTTPTransport } from '@ax-llm/ax'
+import { AxMCPClient, AxMCPStdioTransport, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport } from '@ax-llm/ax'
 import { PROVIDER_API_KEYS } from '../config/index.js';
 import type { 
   AgentConfig,
@@ -12,7 +12,8 @@ import type {
   FunctionRegistryType, 
   MCPTransportConfig, 
   MCPStdioTransportConfig, 
-  MCPHTTPTransportConfig 
+  MCPHTTPSSETransportConfig,
+  MCPStreambleHTTPTransportConfig
 } from '../types.js';
 
 // Define a mapping from provider names to their respective constructors
@@ -40,9 +41,14 @@ export function isStdioTransport(config: MCPTransportConfig): config is MCPStdio
   return 'command' in config;
 }
 
-// Type guard to check if config is http transport
-export function isHTTPTransport(config: MCPTransportConfig): config is MCPHTTPTransportConfig {
+// Type guard to check if config is HTTP SSE transport (also handles legacy HTTP transport)
+export function isHTTPSSETransport(config: MCPTransportConfig): config is MCPHTTPSSETransportConfig {
   return 'sseUrl' in config;
+}
+
+// Type guard to check if config is streamable HTTP transport
+export function isStreambleHTTPTransport(config: MCPTransportConfig): config is MCPStreambleHTTPTransportConfig {
+  return 'mcpEndpoint' in config;
 }
 
 /**
@@ -122,8 +128,11 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
           args: mcpServerConfig.args,
           env: mcpServerConfig.env
         });
-      } else if (isHTTPTransport(mcpServerConfig)) {
-        transport = new AxMCPHTTPTransport(mcpServerConfig.sseUrl);
+      } else if (isStreambleHTTPTransport(mcpServerConfig)) {
+        transport = new AxMCPStreambleHTTPTransport(mcpServerConfig.mcpEndpoint, mcpServerConfig.options);
+      } else if (isHTTPSSETransport(mcpServerConfig)) {
+        // This handles both new SSE transport and legacy HTTP transport (both use sseUrl)
+        transport = new AxMCPHTTPSSETransport(mcpServerConfig.sseUrl);
       } else {  
         throw new Error(`Unsupported transport type: ${JSON.stringify(mcpServerConfig)}`);
       }
