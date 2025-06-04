@@ -5,6 +5,29 @@ This Changelog format is based on [Keep a Changelog]
 adheres to [Semantic Versioning](https://semver.org/spec/
 v2.0.0.html).
 
+## [3.11.1] - 2025-06-04
+
+### Changed
+- Updated MCP (Model Context Protocol) transport implementation to support current ax-llm/ax framework
+- Replaced deprecated `AxMCPHTTPTransport` with `AxMCPHTTPSSETransport` for HTTP SSE transport
+- Added support for `AxMCPStreambleHTTPTransport` for streamable HTTP communication
+- Enhanced MCP configuration with proper TypeScript types using `AxMCPStreamableHTTPTransportOptions`
+- Updated transport configuration to use `mcpEndpoint` parameter for streamable HTTP transport
+
+### Removed
+- Removed all references to deprecated `MCPHTTPTransportConfig` interface
+- Cleaned up deprecated MCP transport type definitions
+
+### Added
+- Comprehensive MCP documentation in README.md with examples for all transport types
+- Added examples for STDIO, HTTP SSE, and streamable HTTP transport configurations
+- Enhanced MCP server configuration examples including filesystem, search, and database servers
+- Added migration guide for users upgrading from deprecated transport types
+
+### Fixed
+- Improved type safety for MCP transport configurations
+- Enhanced error handling for unsupported MCP transport types
+
 ## [3.10.0] - 2025-05-28
 
 ### Added

@@ -424,6 +424,247 @@ Key streaming features:
 - Compatible with all agent types and configurations
 - Maintains cost tracking and state management functionality
 
+### Model Context Protocol (MCP) Support
+
+AxCrew provides built-in support for the Model Context Protocol (MCP), allowing agents to connect to and use MCP servers for enhanced functionality. MCP enables agents to access external tools, data sources, and services in a standardized way.
+
+#### Supported Transport Types
+
+AxCrew supports three MCP transport types, replacing the deprecated `AxMCPHTTPTransport`:
+
+1. **AxMCPStdioTransport** - For standard input/output communication
+2. **AxMCPHTTPSSETransport** - For HTTP with Server-Sent Events
+3. **AxMCPStreambleHTTPTransport** - For streamable HTTP communication
+
+#### Configuration
+
+Add MCP servers to your agent configuration using the `mcpServers` field:
+
+##### STDIO Transport Configuration
+
+For MCP servers that communicate via standard input/output:
+
+```json
+{
+  "name": "DataAnalyst",
+  "description": "Analyzes data using MCP tools",
+  "signature": "data:string -> analysis:string",
+  "provider": "openai",
+  "providerKeyName": "OPENAI_API_KEY",
+  "ai": {
+    "model": "gpt-4",
+    "temperature": 0
+  },
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/files"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"]
+    }
+  }
+}
+```
+
+##### HTTP SSE Transport Configuration
+
+For MCP servers accessible via HTTP with Server-Sent Events:
+
+```json
+{
+  "name": "WebAnalyst",
+  "description": "Analyzes web content using MCP tools",
+  "signature": "url:string -> analysis:string",
+  "provider": "anthropic",
+  "providerKeyName": "ANTHROPIC_API_KEY",
+  "ai": {
+    "model": "claude-3-haiku",
+    "temperature": 0
+  },
+  "mcpServers": {
+    "api-server": {
+      "sseUrl": "https://api.example.com/mcp/sse"
+    }
+  }
+}
+```
+
+##### Streamable HTTP Transport Configuration
+
+For MCP servers that support streamable HTTP communication:
+
+```json
+{
+  "name": "StreamAnalyst",
+  "description": "Processes streaming data using MCP tools",
+  "signature": "stream:string -> results:string",
+  "provider": "google-gemini",
+  "providerKeyName": "GEMINI_API_KEY",
+  "ai": {
+    "model": "gemini-1.5-pro",
+    "temperature": 0
+  },
+  "mcpServers": {
+    "stream-processor": {
+      "mcpEndpoint": "http://localhost:3002/stream",
+      "options": {
+        "authorization": "Bearer ey.JhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..-1234567890.1234567890",
+        "headers": { // Custom headers to include with all HTTP requests Note: Content-Type, Accept, and Mcp-Session-Id are managed automatically
+          "X-Custom-Header": "custom-value"
+        }
+      }
+    }
+  }
+}
+```
+
+##### Mixed Transport Configuration
+
+You can use multiple transport types within the same agent:
+
+```json
+{
+  "name": "MultiModalAgent",
+  "description": "Uses multiple MCP servers with different transports",
+  "signature": "task:string -> result:string",
+  "provider": "openai",
+  "providerKeyName": "OPENAI_API_KEY",
+  "ai": {
+    "model": "gpt-4",
+    "temperature": 0
+  },
+  "mcpServers": {
+    "local-files": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
+    },
+    "web-search": {
+      "sseUrl": "http://localhost:3001/sse"
+    },
+    "data-stream": {
+      "mcpEndpoint": "http://localhost:3002/stream"
+    }
+  }
+}
+```
+
+#### MCP Server Examples
+
+Here are some popular MCP servers you can use:
+
+**Filesystem Server** (STDIO):
+```json
+"filesystem": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]
+}
+```
+
+**Brave Search Server** (STDIO):
+```json
+"brave-search": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+  "env": {
+    "BRAVE_API_KEY": "your-brave-api-key"
+  }
+}
+```
+
+**GitHub Server** (STDIO):
+```json
+"github": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-github"],
+  "env": {
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "your-github-token"
+  }
+}
+```
+
+**PostgreSQL Server** (STDIO):
+```json
+"postgres": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-postgres"],
+  "env": {
+    "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@localhost/db"
+  }
+}
+```
+
+#### Usage in Code
+
+MCP functions are automatically available to agents once the servers are configured:
+
+```javascript
+import { AxCrew } from '@amitdeshmukh/ax-crew';
+
+// Create crew with MCP-enabled agents
+const crew = new AxCrew('./agentConfig.json');
+await crew.addAgent('DataAnalyst'); // Agent with MCP servers configured
+
+const analyst = crew.agents.get('DataAnalyst');
+
+// The agent can now use MCP functions automatically
+const response = await analyst.forward({
+  data: "Please analyze the sales data in /workspace/sales.csv"
+});
+// The agent will automatically use the filesystem MCP server to read the file
+// and any other configured MCP tools for analysis
+```
+
+#### Best Practices
+
+1. **Environment Variables**: Store sensitive information like API keys in environment variables rather than in the configuration file.
+
+2. **Path Security**: For filesystem servers, always specify allowed paths to prevent unauthorized file access.
+
+3. **Server Health**: Implement health checks for HTTP-based MCP servers to ensure reliability.
+
+4. **Error Handling**: MCP server failures are handled gracefully - agents will continue to work with available tools.
+
+5. **Debugging**: Enable debug mode to see MCP server initialization and communication logs:
+```json
+{
+  "debug": true,
+  "mcpServers": { ... }
+}
+```
+
+#### Migration from Deprecated Transport
+
+If you're upgrading from the deprecated `AxMCPHTTPTransport`, update your configuration:
+
+**Before (deprecated):**
+```json
+"mcpServers": {
+  "my-server": {
+    "sseUrl": "http://localhost:3001/sse"
+  }
+}
+```
+
+**After (current):**
+The configuration remains the same - the transport type is automatically detected and `AxMCPHTTPSSETransport` is used for `sseUrl` configurations. No changes to your configuration files are needed.
+
+For new streamable HTTP servers, use:
+```json
+"mcpServers": {
+  "my-stream-server": {
+    "mcpEndpoint": "http://localhost:3002/stream",
+    "options": {
+      "timeout": 30000
+    }
+  }
+}
+```
+
 ### Tracking Usage Costs
 
 The package provides precise cost tracking capabilities for monitoring API usage across individual agents and the entire crew. Costs are calculated using high-precision decimal arithmetic to ensure accuracy.
