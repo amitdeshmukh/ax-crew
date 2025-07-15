@@ -4,7 +4,8 @@ import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, A
 // Import Ax types
 import type { AxFunction } from '@ax-llm/ax';
 // Import the MCP client and transports
-import { AxMCPClient, AxMCPStdioTransport, AxMCPHTTPTransport } from '@ax-llm/ax'
+import { AxMCPClient, AxMCPHTTPSSETransport } from '@ax-llm/ax'
+import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
 import { PROVIDER_API_KEYS } from '../config/index.js';
 import type { 
   AgentConfig,
@@ -121,7 +122,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
           env: mcpServerConfig.env
         });
       } else if (isHTTPTransport(mcpServerConfig)) {
-        transport = new AxMCPHTTPTransport(mcpServerConfig.sseUrl);
+        transport = new AxMCPHTTPSSETransport(mcpServerConfig.sseUrl);
       } else {  
         throw new Error(`Unsupported transport type: ${mcpServerConfig}`);
       }
