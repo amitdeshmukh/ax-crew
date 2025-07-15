@@ -144,9 +144,19 @@ class StatefulAxAgent extends AxAgent<any, any> {
   // Get the usage cost for the most recent run of the agent
   getLastUsageCost(): UsageCost | null {
     const { modelUsage, modelInfo, defaults } = this.axai;
-    const currentModelInfo = modelInfo?.find((m: { name: string }) => m.name === defaults.model);
     
-    if (!currentModelInfo || !modelUsage) {
+    // Check if all required properties exist
+    if (!modelUsage?.promptTokens || !modelUsage?.completionTokens) {
+      return null;
+    }
+
+    if (!modelInfo || !defaults?.model) {
+      return null;
+    }
+
+    const currentModelInfo = modelInfo.find((m: { name: string }) => m.name === defaults.model);
+    
+    if (!currentModelInfo?.promptTokenCostPer1M || !currentModelInfo?.completionTokenCostPer1M) {
       return null;
     }
 

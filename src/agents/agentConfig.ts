@@ -1,10 +1,10 @@
 import fs from 'fs';
 // Import all the providers
-import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether } from '@ax-llm/ax';
+import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether, AxAIReka, AxAIGrok } from '@ax-llm/ax';
 // Import Ax types
 import type { AxFunction } from '@ax-llm/ax';
 // Import the MCP client and transports
-import { AxMCPClient, AxMCPHTTPSSETransport } from '@ax-llm/ax'
+import { AxMCPClient, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport } from '@ax-llm/ax'
 import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
 import { PROVIDER_API_KEYS } from '../config/index.js';
 import type { 
@@ -13,7 +13,8 @@ import type {
   FunctionRegistryType, 
   MCPTransportConfig, 
   MCPStdioTransportConfig, 
-  MCPHTTPTransportConfig 
+  MCPHTTPSSETransportConfig,
+  MCPStreambleHTTPTransportConfig
 } from '../types.js';
 
 // Define a mapping from provider names to their respective constructors
@@ -28,7 +29,9 @@ const AIConstructors: Record<string, any> = {
   'mistral': AxAIMistral,
   'ollama': AxAIOllama,
   'openai': AxAIOpenAI,
-  'together': AxAITogether
+  'together': AxAITogether,
+  'reka': AxAIReka,
+  'grok': AxAIGrok
 };
 
 // Provider type
@@ -39,9 +42,14 @@ export function isStdioTransport(config: MCPTransportConfig): config is MCPStdio
   return 'command' in config;
 }
 
-// Type guard to check if config is http transport
-export function isHTTPTransport(config: MCPTransportConfig): config is MCPHTTPTransportConfig {
+// Type guard to check if config is HTTP SSE transport (also handles legacy HTTP transport)
+export function isHTTPSSETransport(config: MCPTransportConfig): config is MCPHTTPSSETransportConfig {
   return 'sseUrl' in config;
+}
+
+// Type guard to check if config is streamable HTTP transport
+export function isStreambleHTTPTransport(config: MCPTransportConfig): config is MCPStreambleHTTPTransportConfig {
+  return 'mcpEndpoint' in config;
 }
 
 /**
@@ -121,10 +129,12 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
           args: mcpServerConfig.args,
           env: mcpServerConfig.env
         });
-      } else if (isHTTPTransport(mcpServerConfig)) {
+      } else if (isHTTPSSETransport(mcpServerConfig)) {
         transport = new AxMCPHTTPSSETransport(mcpServerConfig.sseUrl);
+      } else if (isStreambleHTTPTransport(mcpServerConfig)) {
+        transport = new AxMCPStreambleHTTPTransport(mcpServerConfig.mcpEndpoint, mcpServerConfig.options);
       } else {  
-        throw new Error(`Unsupported transport type: ${mcpServerConfig}`);
+        throw new Error(`Unsupported transport type: ${JSON.stringify(mcpServerConfig)}`);
       }
 
       const mcpClient = new AxMCPClient(transport, {debug: agentConfigData.debug || false});
@@ -136,7 +146,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
     return functions;
   } catch (error) {
     initializedClients = [];
-    console.error('Error during MCP client setup:', error);
+    console.error(`Error during MCP client setup: ${error}`);
     throw error;
   }
 };

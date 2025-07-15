@@ -11,10 +11,10 @@ const config = {
       description: "Completes a user specified task",
       signature:
         'question:string "a question to be answered" -> answer:string "the answer to the question"',
-      provider: "openai", 
-      providerKeyName: "OPENAI_API_KEY",
+      provider: "google-gemini", 
+      providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gpt-4o-mini",
+        model: "gemini-2.0-flash",
         maxTokens: 1000,
         temperature: 0,
       },

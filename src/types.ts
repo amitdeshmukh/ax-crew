@@ -2,7 +2,7 @@ import type {
   AxFunction, 
   AxSignature, 
   AxModelConfig,
-  AxProgramForwardOptions
+  AxMCPStreamableHTTPTransportOptions
 } from '@ax-llm/ax';
 
 import type { Provider } from './agents/agentConfig.js';
@@ -37,13 +37,24 @@ type FunctionRegistryType = {
 
 /**
  * The usage metrics of the model.
- * promptTokens: number;
- * completionTokens: number;
+ * Supports both direct token properties and nested tokens structure
  */
-interface ModelUsage {
-  promptTokens: number;
-  completionTokens: number;
+interface ModelUsageBase {
+  promptTokens?: number;
+  completionTokens?: number;
 }
+
+interface ModelUsageNested {
+  ai?: string;
+  model?: string;
+  tokens?: {
+    totalTokens?: number;
+    promptTokens: number;
+    completionTokens: number;
+  };
+}
+
+type ModelUsage = ModelUsageBase & ModelUsageNested;
 
 /**
  * The published cost for using the model.
@@ -105,15 +116,32 @@ interface MCPStdioTransportConfig {
   env?: NodeJS.ProcessEnv
 }
 
-interface MCPHTTPTransportConfig {
+/**
+ * Config for an HTTP SSE MCP server.
+ * 
+ * @property {string} sseUrl - The SSE URL for the MCP server.
+ */
+interface MCPHTTPSSETransportConfig {
   sseUrl: string
 }
+
+/**
+ * Config for a streamable HTTP MCP server.
+ * 
+ * @property {string} mcpEndpoint - The HTTP endpoint URL for the MCP server.
+ * @property {AxMCPStreamableHTTPTransportOptions} options - Optional transport options.
+ */
+interface MCPStreambleHTTPTransportConfig {
+  mcpEndpoint: string
+  options?: AxMCPStreamableHTTPTransportOptions
+}
+
 /**
  * Config for an MCP server.
  * 
- * @property {MCPStdioTransportConfig | MCPHTTPTransportConfig} config - The config for the MCP server. Config can be either a stdio or http transport.
+ * @property {MCPStdioTransportConfig | MCPHTTPSSETransportConfig | MCPStreambleHTTPTransportConfig} config - The config for the MCP server. Config can be either stdio, http-sse, or streamable http transport.
  */
-type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPTransportConfig
+type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPSSETransportConfig | MCPStreambleHTTPTransportConfig
 
 /**
  * The configuration for an agent.
@@ -160,7 +188,8 @@ export {
   type StateInstance,
   type FunctionRegistryType,
   type MCPStdioTransportConfig,
-  type MCPHTTPTransportConfig,
+  type MCPHTTPSSETransportConfig,
+  type MCPStreambleHTTPTransportConfig,
   type MCPTransportConfig,
   type ModelUsage,
   type ModelInfo,

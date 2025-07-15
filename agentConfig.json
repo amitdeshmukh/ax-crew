@@ -108,6 +108,33 @@
           "solution": "Let's solve this step by step:\n1. The cube root of a number is a value that, when multiplied by itself twice, gives the original number\n2. For 27, we need to find a number that when cubed equals 27\n3. 3 × 3 × 3 = 27\nTherefore, the cube root of 27 is 3"
         }
       ]
+    },
+    {
+      "name": "DataAnalyst",
+      "description": "Analyzes data using MCP tools for file access and web search",
+      "signature": "analysisRequest:string \"a request to analyze data from files or web sources\" -> analysis:string \"detailed analysis with insights\"",
+      "provider": "openai",
+      "providerKeyName": "OPENAI_API_KEY",
+      "ai": {
+        "model": "gpt-4o-mini",
+        "temperature": 0
+      },
+      "options": {
+        "debug": true
+      },
+      "mcpServers": {
+        "filesystem": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+        },
+        "brave-search": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+          "env": {
+            "BRAVE_API_KEY": "sk-1234567890"
+          }
+        }
+      }
     }
   ]
 }
