@@ -2,7 +2,8 @@ import type {
   AxFunction, 
   AxSignature, 
   AxModelConfig,
-  AxMCPStreamableHTTPTransportOptions
+  AxMCPStreamableHTTPTransportOptions,
+  AxProgramForwardOptions
 } from '@ax-llm/ax';
 
 import type { Provider } from './agents/agentConfig.js';
