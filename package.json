@@ -17,14 +17,14 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@ax-llm/ax-tools": "^13.0.8",
     "decimal.js": "^10.5.0",
     "dotenv": "^16.4.5",
     "upgrade": "^1.1.0",
     "uuid": "^10.0.0"
   },
   "peerDependencies": {
-    "@ax-llm/ax": "^13.0.8",
-    "@ax-llm/ax-tools": "^13.0.8"
+    "@ax-llm/ax": "^13.0.8"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
