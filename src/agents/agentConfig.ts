@@ -4,7 +4,8 @@ import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, A
 // Import Ax types
 import type { AxFunction } from '@ax-llm/ax';
 // Import the MCP client and transports
-import { AxMCPClient, AxMCPStdioTransport, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport } from '@ax-llm/ax'
+import { AxMCPClient, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport } from '@ax-llm/ax'
+import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
 import { PROVIDER_API_KEYS } from '../config/index.js';
 import type { 
   AgentConfig,
@@ -128,11 +129,10 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
           args: mcpServerConfig.args,
           env: mcpServerConfig.env
         });
+      } else if (isHTTPSSETransport(mcpServerConfig)) {
+        transport = new AxMCPHTTPSSETransport(mcpServerConfig.sseUrl);
       } else if (isStreambleHTTPTransport(mcpServerConfig)) {
         transport = new AxMCPStreambleHTTPTransport(mcpServerConfig.mcpEndpoint, mcpServerConfig.options);
-      } else if (isHTTPSSETransport(mcpServerConfig)) {
-        // This handles both new SSE transport and legacy HTTP transport (both use sseUrl)
-        transport = new AxMCPHTTPSSETransport(mcpServerConfig.sseUrl);
       } else {  
         throw new Error(`Unsupported transport type: ${JSON.stringify(mcpServerConfig)}`);
       }

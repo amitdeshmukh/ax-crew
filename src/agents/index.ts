@@ -50,7 +50,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
       name: string;
       description: string;
       signature: string | AxSignature;
-      agents?: AxAgentic[] | undefined;
+      agents?: AxAgentic<any, any>[] | undefined;
       functions?: (AxFunction | (() => AxFunction))[] | undefined;
       examples?: Array<Record<string, any>> | undefined;
       mcpServers?: Record<string, MCPTransportConfig> | undefined;

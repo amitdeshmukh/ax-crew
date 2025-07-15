@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@amitdeshmukh/ax-crew",
-  "version": "3.11.1",
+  "version": "3.11.3",
   "description": "Build and launch a crew of AI agents with shared state. Built with axllm.dev",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,11 +17,14 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@ax-llm/ax": "^11.0.50",
     "decimal.js": "^10.5.0",
     "dotenv": "^16.4.5",
     "upgrade": "^1.1.0",
     "uuid": "^10.0.0"
+  },
+  "peerDependencies": {
+    "@ax-llm/ax": "^13.0.8",
+    "@ax-llm/ax-tools": "^13.0.8"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
