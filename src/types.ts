@@ -6,7 +6,23 @@ import type {
   AxProgramForwardOptions
 } from '@ax-llm/ax';
 
-import type { Provider } from './agents/agentConfig.js';
+// Canonical provider slugs supported by ai() factory
+export type Provider =
+  // Canonical slugs per docs
+  | 'openai'
+  | 'anthropic'
+  | 'google-gemini'
+  | 'mistral'
+  | 'groq'
+  | 'cohere'
+  | 'together'
+  | 'deepseek'
+  | 'ollama'
+  | 'huggingface'
+  | 'openrouter'
+  | 'azure-openai'
+  | 'reka'
+  | 'x-grok'
 
 /**
  * A state instance that is shared between agents.
@@ -132,7 +148,7 @@ interface MCPHTTPSSETransportConfig {
  * @property {string} mcpEndpoint - The HTTP endpoint URL for the MCP server.
  * @property {AxMCPStreamableHTTPTransportOptions} options - Optional transport options.
  */
-interface MCPStreambleHTTPTransportConfig {
+interface MCPStreamableHTTPTransportConfig {
   mcpEndpoint: string
   options?: AxMCPStreamableHTTPTransportOptions
 }
@@ -142,7 +158,7 @@ interface MCPStreambleHTTPTransportConfig {
  * 
  * @property {MCPStdioTransportConfig | MCPHTTPSSETransportConfig | MCPStreambleHTTPTransportConfig} config - The config for the MCP server. Config can be either stdio, http-sse, or streamable http transport.
  */
-type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPSSETransportConfig | MCPStreambleHTTPTransportConfig
+type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPSSETransportConfig | MCPStreamableHTTPTransportConfig
 
 /**
  * The configuration for an agent.
@@ -155,7 +171,7 @@ type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPSSETransportConfig | 
  * @property {AxModelConfig & { model: string }} ai - The AI model configuration to be passed to the agent.
  * @property {boolean} debug - Whether to enable debug mode.
  * @property {string} apiURL - Set this if you are using a custom API URL e.g. ollama on localhost.
- * @property {Partial<AxProgramForwardOptions>} options - Agent options including thinkingTokenBudget, showThoughts, etc. Refer to the Ax documentation for more details.
+ * @property {Partial<AxProgramForwardOptions<any>>} options - Agent options including thinkingTokenBudget, showThoughts, etc. Refer to the Ax documentation for more details.
  * @property {string[]} functions - Function names to be used by the agent.
  * @property {string[]} agents - Sub-agent available to the agent.
  * @property {Record<string, any>[]} examples - DSPy examples for the agent to learn from.
@@ -170,7 +186,7 @@ interface AgentConfig {
   ai: AxModelConfig & { model: string };
   debug?: boolean;
   apiURL?: string;
-  options?: Partial<AxProgramForwardOptions>;
+  options?: Partial<AxProgramForwardOptions<any>>;
   functions?: string[];
   agents?: string[];
   examples?: Array<Record<string, any>>;
@@ -190,10 +206,10 @@ export {
   type FunctionRegistryType,
   type MCPStdioTransportConfig,
   type MCPHTTPSSETransportConfig,
-  type MCPStreambleHTTPTransportConfig,
+  type MCPStreamableHTTPTransportConfig,
   type MCPTransportConfig,
   type ModelUsage,
   type ModelInfo,
   type UsageCost,
   type AggregatedCosts
-};
+}

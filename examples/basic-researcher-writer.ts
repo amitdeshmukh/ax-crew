@@ -1,17 +1,20 @@
 import { AxCrew } from "../dist/index.js";
-import { AxCrewFunctions } from "../src/functions/index.js";
+import { AxCrewFunctions } from "../dist/functions/index.js";
+import type { AxCrewConfig } from "../dist/index.js";
+import type { Provider } from "../dist/types.js";
 
 // Example agent configuration
-const agentConfig = {
+const agentConfig: AxCrewConfig = {
   crew: [
     {
       name: "researcher",
       description: "A research agent that finds information",
       signature: "query:string -> research:string",
-      provider: "anthropic",
-      providerKeyName: "ANTHROPIC_API_KEY",
+      provider: "google-gemini" as Provider,
+      providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "claude-3-haiku-20240307"
+        model: "gemini-2.5-flash-lite",
+        maxTokens: 4000
       },
       options: {
         debug: true,
@@ -22,10 +25,11 @@ const agentConfig = {
       name: "writer",
       description: "A writing agent that creates content",
       signature: "topic:string -> article:string",
-      provider: "anthropic",
+      provider: "anthropic" as Provider,
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "claude-3-haiku-20240307"
+        model: "claude-3-haiku-20240307",
+        maxTokens: 4000
       },
       options: {
         debug: true,
@@ -57,16 +61,19 @@ async function main() {
     const { article } = await writer.forward({
       topic: "Quantum Computing Benefits",
     });
+    console.log("Writer getUsage:", (writer as any).getUsage?.());
+    console.log("Researcher getUsage:", (researcher as any).getUsage?.());
+    console.log("Crew getUsage:", (crew as any).getUsage?.());
+
 
     // Print the article
     console.log("Article:", article);
     
-    // Print usage costs
-    console.log("\nUsage:\n+++++++++++++++++++++++++++++++++");
-    console.log("Writer Agent:", JSON.stringify(writer.getAccumulatedCosts(), null, 2));
-    console.log("Researcher Agent Last Usage:", JSON.stringify(researcher.getLastUsageCost(), null, 2));
-    console.log("Researcher Agent Accumulated:", JSON.stringify(researcher.getAccumulatedCosts(), null, 2));
-    console.log("Total Cost:", JSON.stringify(crew.getAggregatedCosts(), null, 2));
+    // Print metrics snapshots (new mechanism)
+    console.log("\nMetrics:\n+++++++++++++++++++++++++++++++++");
+    console.log("Writer Metrics:", JSON.stringify((writer as any).getMetrics?.(), null, 2));
+    console.log("Researcher Metrics:", JSON.stringify((researcher as any).getMetrics?.(), null, 2));
+    console.log("Crew Metrics:", JSON.stringify((crew as any).getCrewMetrics?.(), null, 2));
 
     // If you want to start fresh with cost tracking
     crew.resetCosts();

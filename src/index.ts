@@ -9,6 +9,8 @@ import type {
   StateInstance, 
   FunctionRegistryType 
 } from './types.js';
+export * from './metrics/index.js';
+export { MetricsRegistry } from './metrics/index.js';
 
 // Main AxCrew configuration interface
 /**
