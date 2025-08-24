@@ -20,7 +20,7 @@ import type {
 
 import { createState }   from "../state/index.js";
 import { parseCrewConfig, parseAgentConfig } from "./agentConfig.js";
-import { StateFulAxAgentUsage } from "./agentUseCosts.js";
+import { MetricsRegistry } from "../metrics/index.js";
 
 // Define the interface for the agent configuration
 interface ParsedAgentConfig {
@@ -36,6 +36,7 @@ interface ParsedAgentConfig {
   mcpServers?: Record<string, MCPTransportConfig>;
   subAgentNames: string[];
   examples?: Array<Record<string, any>>;
+  tracker?: any;
 }
 
 // Extend the AxAgent class from ax-llm
@@ -43,6 +44,14 @@ class StatefulAxAgent extends AxAgent<any, any> {
   state: StateInstance;
   axai: any;
   private agentName: string;
+  private costTracker?: any;
+  private lastRecordedCostUSD: number = 0;
+  private isAxAIService(obj: any): obj is AxAI {
+    return !!obj && typeof obj.getName === 'function' && typeof obj.chat === 'function';
+  }
+  private isAxAIInstance(obj: any): obj is AxAI {
+    return !!obj && typeof obj === 'object' && ('defaults' in obj || 'modelInfo' in obj);
+  }
 
   constructor(
     ai: AxAI,
@@ -76,52 +85,92 @@ class StatefulAxAgent extends AxAgent<any, any> {
   }
 
   // Function overloads for forward method
-  async forward(values: Record<string, any>, options?: Readonly<AxProgramForwardOptions>): Promise<Record<string, any>>;
-  async forward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramForwardOptions>): Promise<Record<string, any>>;
+  async forward(values: Record<string, any>, options?: Readonly<AxProgramForwardOptions<any>>): Promise<Record<string, any>>;
+  async forward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramForwardOptions<any>>): Promise<Record<string, any>>;
   
   // Implementation
   async forward(
     first: Record<string, any> | AxAI,
-    second?: Record<string, any> | Readonly<AxProgramForwardOptions>,
-    third?: Readonly<AxProgramForwardOptions>
+    second?: Record<string, any> | Readonly<AxProgramForwardOptions<any>>,
+    third?: Readonly<AxProgramForwardOptions<any>>
   ): Promise<Record<string, any>> {
     let result;
     
+    const start = performance.now();
+    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
+    const labels = { crewId, agent: this.agentName } as any;
+
     // Track costs regardless of whether it's a direct or sub-agent call
     // This ensures we capture multiple legitimate calls to the same agent
-    if ('apiURL' in first) {
+    if (this.isAxAIService(first)) {
       // Sub-agent case (called with AI service)
       result = await super.forward(this.axai, second as Record<string, any>, third);
     } else {
       // Direct call case
-      result = await super.forward(this.axai, first, second as Readonly<AxProgramForwardOptions>);
+      result = await super.forward(this.axai, first, second as Readonly<AxProgramForwardOptions<any>>);
     }
 
-    // Track costs after the call
-    const cost = this.getLastUsageCost();
-    if (cost) {
-      StateFulAxAgentUsage.trackCostInState(this.agentName, cost, this.state);
+    // Track metrics and costs after the call using built-in usage
+    const durationMs = performance.now() - start;
+    MetricsRegistry.recordRequest(labels, false, durationMs);
+    // Always record tokens from built-in usage array if present
+    const builtIn = (this as any).getUsage?.();
+    if (Array.isArray(builtIn)) {
+      const totals = builtIn.reduce(
+        (acc: any, u: any) => {
+          const pt = u.tokens?.promptTokens ?? u.promptTokens ?? 0;
+          const ct = u.tokens?.completionTokens ?? u.completionTokens ?? 0;
+          acc.promptTokens += typeof pt === 'number' ? pt : 0;
+          acc.completionTokens += typeof ct === 'number' ? ct : 0;
+          // also aggregate per-model to feed Ax tracker
+          const model = u.model || (this.axai as any)?.getLastUsedChatModel?.() || (this.axai as any)?.defaults?.model;
+          if (model) {
+            acc.byModel[model] = (acc.byModel[model] || 0) + (pt + ct);
+          }
+          return acc;
+        },
+        { promptTokens: 0, completionTokens: 0, byModel: {} as Record<string, number> }
+      );
+      MetricsRegistry.recordTokens(labels, {
+        promptTokens: totals.promptTokens,
+        completionTokens: totals.completionTokens,
+        totalTokens: totals.promptTokens + totals.completionTokens,
+      });
+      // Feed Ax's cost tracker with token totals per model; Ax owns pricing
+      const costTracker = (this as any).costTracker;
+      try {
+        for (const [m, count] of Object.entries(totals.byModel)) {
+          costTracker?.trackTokens?.(count, m);
+        }
+        const totalUSD = Number(costTracker?.getCurrentCost?.() ?? 0);
+        if (!Number.isNaN(totalUSD) && totalUSD > 0) {
+          MetricsRegistry.recordEstimatedCost(labels, totalUSD);
+        }
+      } catch {}
     }
 
     return result;
   }
 
   // Add streaming forward method overloads
-  streamingForward(values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions>): AxGenStreamingOut<any>;
-  streamingForward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions>): AxGenStreamingOut<any>;
+  streamingForward(values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions<any>>): AxGenStreamingOut<any>;
+  streamingForward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions<any>>): AxGenStreamingOut<any>;
   
   // Implementation
   streamingForward(
     first: Record<string, any> | AxAI,
-    second?: Record<string, any> | Readonly<AxProgramStreamingForwardOptions>,
-    third?: Readonly<AxProgramStreamingForwardOptions>
+    second?: Record<string, any> | Readonly<AxProgramStreamingForwardOptions<any>>,
+    third?: Readonly<AxProgramStreamingForwardOptions<any>>
   ): AxGenStreamingOut<any> {
+    const start = performance.now();
+    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
+    const labels = { crewId, agent: this.agentName } as any;
     let streamingResult: AxGenStreamingOut<any>;
     
-    if ('apiURL' in first) {
+    if (this.isAxAIService(first)) {
       streamingResult = super.streamingForward(this.axai, second as Record<string, any>, third);
     } else {
-      streamingResult = super.streamingForward(this.axai, first, second as Readonly<AxProgramStreamingForwardOptions>);
+      streamingResult = super.streamingForward(this.axai, first, second as Readonly<AxProgramStreamingForwardOptions<any>>);
     }
 
     // Create a new async generator that tracks costs after completion
@@ -131,43 +180,71 @@ class StatefulAxAgent extends AxAgent<any, any> {
           yield chunk;
         }
       } finally {
-        const cost = this.getLastUsageCost();
-        if (cost) {
-          StateFulAxAgentUsage.trackCostInState(this.agentName, cost, this.state);
+        const durationMs = performance.now() - start;
+        MetricsRegistry.recordRequest(labels, true, durationMs);
+        // Record tokens from built-in usage array if present
+        const builtIn = (this as any).getUsage?.();
+        if (Array.isArray(builtIn)) {
+          const totals = builtIn.reduce(
+            (acc: any, u: any) => {
+              const pt = u.tokens?.promptTokens ?? u.promptTokens ?? 0;
+              const ct = u.tokens?.completionTokens ?? u.completionTokens ?? 0;
+              acc.promptTokens += typeof pt === 'number' ? pt : 0;
+              acc.completionTokens += typeof ct === 'number' ? ct : 0;
+              const model = u.model || (this.axai as any)?.getLastUsedChatModel?.() || (this.axai as any)?.defaults?.model;
+              if (model) {
+                acc.byModel[model] = (acc.byModel[model] || 0) + (pt + ct);
+              }
+              return acc;
+            },
+            { promptTokens: 0, completionTokens: 0, byModel: {} as Record<string, number> }
+          );
+          MetricsRegistry.recordTokens(labels, {
+            promptTokens: totals.promptTokens,
+            completionTokens: totals.completionTokens,
+            totalTokens: totals.promptTokens + totals.completionTokens,
+          });
+          const costTracker = (this as any).costTracker;
+          try {
+            for (const [m, count] of Object.entries(totals.byModel)) {
+              costTracker?.trackTokens?.(count, m);
+            }
+            const totalUSD = Number(costTracker?.getCurrentCost?.() ?? 0);
+            if (!Number.isNaN(totalUSD) && totalUSD > 0) {
+              MetricsRegistry.recordEstimatedCost(labels, totalUSD);
+            }
+          } catch {}
         }
+        // Record estimated cost (USD) via attached tracker if available
+        const costTracker = (this as any).costTracker;
+        try {
+          const totalUSD = Number(costTracker?.getCurrentCost?.() ?? 0);
+          if (!Number.isNaN(totalUSD) && totalUSD > 0) {
+            MetricsRegistry.recordEstimatedCost(labels, totalUSD);
+          }
+        } catch {}
       }
     }).bind(this)();
 
     return wrappedGenerator as AxGenStreamingOut<any>;
   }
 
-  // Get the usage cost for the most recent run of the agent
-  getLastUsageCost(): UsageCost | null {
-    const { modelUsage, modelInfo, defaults } = this.axai;
-    
-    // Check if all required properties exist
-    if (!modelUsage?.promptTokens || !modelUsage?.completionTokens) {
-      return null;
-    }
-
-    if (!modelInfo || !defaults?.model) {
-      return null;
-    }
-
-    const currentModelInfo = modelInfo.find((m: { name: string }) => m.name === defaults.model);
-    
-    if (!currentModelInfo?.promptTokenCostPer1M || !currentModelInfo?.completionTokenCostPer1M) {
-      return null;
-    }
-
-    return StateFulAxAgentUsage.calculateCost(modelUsage, currentModelInfo);
-  }
+  // Legacy cost API removed: rely on Ax trackers for cost reporting
+  getLastUsageCost(): UsageCost | null { return null; }
 
   // Get the accumulated costs for all runs of this agent
-  getAccumulatedCosts(): UsageCost | null {
-    const stateKey = `${StateFulAxAgentUsage.STATE_KEY_PREFIX}${this.agentName}`;
-    return this.state.get(stateKey) as UsageCost | null;
+  getAccumulatedCosts(): UsageCost | null { return null; }
+
+  // Metrics API for this agent
+  getMetrics() {
+    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
+    return MetricsRegistry.snapshot({ crewId, agent: this.agentName } as any);
   }
+  resetMetrics(): void {
+    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
+    MetricsRegistry.reset({ crewId, agent: this.agentName } as any);
+  }
+
 }
 
 /**
@@ -208,6 +285,8 @@ class AxCrew {
     this.crewId = crewId;
     this.agents = new Map<string, StatefulAxAgent>();
     this.state = createState(crewId);
+    // Make crewId discoverable to metrics
+    this.state.set('crewId', crewId);
   }
 
   /**
@@ -226,7 +305,7 @@ class AxCrew {
       );
 
       // Destructure with type assertion
-      const { ai, name, description, signature, functions, subAgentNames, examples } = agentConfig;
+      const { ai, name, description, signature, functions, subAgentNames, examples, tracker } = agentConfig;
 
       // Get subagents for the AI agent
       const subAgents = subAgentNames.map((subAgentName: string) => {
@@ -238,6 +317,30 @@ class AxCrew {
         return this.agents?.get(subAgentName);
       });
 
+      // Dedupe sub-agents by name (defensive)
+      const subAgentSet = new Map<string, StatefulAxAgent>();
+      for (const sa of subAgents.filter((agent): agent is StatefulAxAgent => agent !== undefined)) {
+        const n = (sa as any)?.agentName ?? (sa as any)?.name ?? '';
+        if (!subAgentSet.has(n)) subAgentSet.set(n, sa);
+      }
+      const uniqueSubAgents = Array.from(subAgentSet.values());
+
+      // Dedupe functions by name and avoid collision with sub-agent names
+      const subAgentNameSet = new Set(uniqueSubAgents.map((sa: any) => sa?.agentName ?? sa?.name).filter(Boolean));
+      const uniqueFunctions: AxFunction[] = [];
+      const seenFn = new Set<string>();
+      for (const fn of functions.filter((fn): fn is AxFunction => fn !== undefined)) {
+        const fnName = fn.name;
+        if (subAgentNameSet.has(fnName)) {
+          // Skip function that collides with a sub-agent name
+          continue;
+        }
+        if (!seenFn.has(fnName)) {
+          seenFn.add(fnName);
+          uniqueFunctions.push(fn);
+        }
+      }
+
       // Create an instance of StatefulAxAgent
       const agent = new StatefulAxAgent(
         ai,
@@ -245,16 +348,13 @@ class AxCrew {
           name,
           description,
           signature,
-          functions: functions.filter(
-            (fn): fn is AxFunction => fn !== undefined
-          ),
-          agents: subAgents.filter(
-            (agent): agent is StatefulAxAgent => agent !== undefined
-          ),
+          functions: uniqueFunctions,
+          agents: uniqueSubAgents,
           examples,
         },
         this.state
       );
+      (agent as any).costTracker = tracker;
 
       return agent;
     } catch (error) {
@@ -394,20 +494,29 @@ class AxCrew {
     this.state.reset();
   }
 
-  /**
-   * Gets aggregated costs for all agents in the crew
-   * @returns Aggregated cost information for all agents
-   */
-  getAggregatedCosts(): ReturnType<typeof StateFulAxAgentUsage.getAggregatedCosts> {
-    return StateFulAxAgentUsage.getAggregatedCosts(this.state);
-  }
 
   /**
    * Resets all cost tracking for the crew
    */
   resetCosts(): void {
-    StateFulAxAgentUsage.resetCosts(this.state);
+    // Reset AxAgent built-in usage and our metrics registry
+    if (this.agents) {
+      for (const [, agent] of this.agents) {
+        try { (agent as any).resetUsage?.(); } catch {}
+        try { (agent as any).resetMetrics?.(); } catch {}
+      }
+    }
+    MetricsRegistry.reset({ crewId: this.crewId });
+  }
+
+  // Metrics API
+  getCrewMetrics() {
+    return MetricsRegistry.snapshotCrew(this.crewId);
+  }
+  resetCrewMetrics(): void {
+    MetricsRegistry.reset({ crewId: this.crewId });
   }
 }
 
 export { AxCrew };
+export type { StatefulAxAgent };

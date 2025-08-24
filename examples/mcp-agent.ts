@@ -1,10 +1,11 @@
 import { AxCrew } from "../dist/index.js";
+import type { AxCrewConfig } from "../dist/index.js";
 
 import dotenv from "dotenv";
 dotenv.config();
 
 // Define the crew configuration
-const config = {
+const config: AxCrewConfig = {
   crew: [
     {
       name: "MapsAgent",
@@ -15,9 +16,11 @@ const config = {
       ai: {
         model: "claude-3-5-sonnet-latest",
         temperature: 0,
+        maxTokens: 1000,
+        stream: true
       },
       options: {
-        debug: true,
+        debug: true
       },
       "mcpServers": {
         "google-maps": {
@@ -43,6 +46,7 @@ const config = {
         model: "gpt-4o-mini",
         maxTokens: 1000,
         temperature: 0,
+        stream: true
       },
       options: {
         debug: true,
@@ -59,10 +63,10 @@ const config = {
       ai: {
         model: "gemini-1.5-pro",
         temperature: 0,
+        stream: true
       },
       options: {
         debug: false,
-        codeExecution: true,
       },
     },
   ],
@@ -89,11 +93,11 @@ const main = async (): Promise<void> => {
 
     console.log(`\nAnswer: ${JSON.stringify(managerResponse?.answer, null, 2)}`);
 
-    // Print usage costs
-    console.log("\nUsage:\n+++++++++++++++++++++++++++++++++");
-    console.log("Manager Agent Cost in $:", JSON.stringify(managerAgent?.getAccumulatedCosts()?.totalCost, null, 2));
-    console.log("Maps Agent Cost in $:", JSON.stringify(mapsAgent?.getAccumulatedCosts()?.totalCost, null, 2));
-    console.log("Total Cost in $:", JSON.stringify(crew.getAggregatedCosts()?.totalCost, null, 2));
+    // Print metrics
+    console.log("\nMetrics:\n+++++++++++++++++++++++++++++++++");
+    console.log("Manager Agent Metrics:", JSON.stringify((managerAgent as any)?.getMetrics?.(), null, 2));
+    console.log("Maps Agent Metrics:", JSON.stringify((mapsAgent as any)?.getMetrics?.(), null, 2));
+    console.log("Crew Metrics:", JSON.stringify((crew as any)?.getCrewMetrics?.(), null, 2));
 };
 
 main()

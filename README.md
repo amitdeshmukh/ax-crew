@@ -10,6 +10,7 @@ This repo simplifies development of [AxLLM](https://axllm.dev) AI Agents by usin
 - **Task Execution**: Plan and execute tasks using agents in the crew.
 - **Streaming Support**: Stream agent responses in real-time for better user experience and faster feedback.
 - **Model Context Protocol (MCP)**: Support for MCP to allow agents to use MCP servers.
+- **Metrics and Cost Tracking**: Built-in per-agent and per-crew metrics, including token usage and estimated USD costs (5-decimal rounding).
 
 ## Getting Started
 
@@ -92,12 +93,11 @@ if (planner) {
   // Sub-agent usage - when used by another agent (AI is ignored and agent's own config is used)
   const subAgentResponse = await planner.forward(ai, { task: "Plan something" });
   
-  const cost = planner.getUsageCost();
-  
-  if (cost) {
-    console.log(`Total cost: $${cost.totalCost}`);
-    console.log(`Total tokens: ${cost.tokenMetrics.totalTokens}`);
-  }
+  // Metrics (per-agent and per-crew)
+  const agentMetrics = (planner as any).getMetrics?.();
+  const crewMetrics = crew.getCrewMetrics();
+  console.log('Agent metrics:', agentMetrics);
+  console.log('Crew metrics:', crewMetrics);
 }
 ```
 
@@ -514,7 +514,7 @@ For MCP servers that support streamable HTTP communication:
       "mcpEndpoint": "http://localhost:3002/stream",
       "options": {
         "authorization": "Bearer ey.JhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..-1234567890.1234567890",
-        "headers": { // Custom headers to include with all HTTP requests Note: Content-Type, Accept, and Mcp-Session-Id are managed automatically
+        "headers": { 
           "X-Custom-Header": "custom-value"
         }
       }
@@ -667,76 +667,45 @@ For new streamable HTTP servers, use:
 
 ### Tracking Usage Costs
 
-The package provides precise cost tracking capabilities for monitoring API usage across individual agents and the entire crew. Costs are calculated using high-precision decimal arithmetic to ensure accuracy.
+The package provides metrics for monitoring API usage across individual agents and the entire crew. Estimated costs are accumulated precisely and rounded to 5 decimal places for reporting.
 
 ```javascript
 // After running an agent's forward method
-const response = await Planner.forward({ task: userQuery });
+await Planner.forward({ task: userQuery });
 
-// Get individual agent costs
-const agentCost = Planner.getLastUsageCost();
-console.log(agentCost);
-/* Output example:
+// Per-agent metrics
+const agentMetrics = (Planner as any).getMetrics?.();
+console.log(agentMetrics);
+/* Example:
 {
-  promptCost: "0.0003637500000",
-  completionCost: "0.0006100000000",
-  totalCost: "0.0009737500000",
-  tokenMetrics: {
-    promptTokens: 291,
-    completionTokens: 122,
-    totalTokens: 413
-  }
+  provider: "anthropic",
+  model: "claude-3-haiku-20240307",
+  requests: { totalRequests, totalErrors, errorRate, totalStreamingRequests, durationMsSum, durationCount },
+  tokens: { promptTokens, completionTokens, totalTokens },
+  estimatedCostUSD: 0.00091, // rounded to 5 decimals
+  functions: { totalFunctionCalls, totalFunctionLatencyMs }
 }
 */
 
-// Get cumulative costs for the agent
-const cumulativeCost = Planner.getAccumulatedCosts();
-console.log(cumulativeCost);
-/* Output example:
+// Crew metrics
+const crewMetrics = crew.getCrewMetrics();
+console.log(crewMetrics);
+/* Example:
 {
-  promptCost: "0.0003637500000",
-  completionCost: "0.0006100000000",
-  totalCost: "0.0009737500000",
-  tokenMetrics: {
-    promptTokens: 291,
-    completionTokens: 122,
-    totalTokens: 413
-  }
+  requests: { ... },
+  tokens: { promptTokens, completionTokens, totalTokens },
+  estimatedCostUSD: 0.00255, // rounded to 5 decimals
+  functions: { ... }
 }
 */
 
-// Get aggregated costs for all agents in the crew
-const crewCosts = crew.getAggregatedCosts();
-console.log(crewCosts);
-/* Output example:
-{
-  totalCost: "0.0025482500000",
-  byAgent: {
-    "Planner": { ... },
-    "Calculator": { ... },
-    "Manager": { ... }
-  },
-  aggregatedMetrics: {
-    promptTokens: 850,
-    completionTokens: 324,
-    totalTokens: 1174,
-    promptCost: "0.0010625000000",
-    completionCost: "0.0014857500000"
-  }
-}
-*/
-
-// Reset cost tracking if needed
+// Reset tracked metrics
 crew.resetCosts();
 ```
 
-Cost tracking features:
-- High-precision decimal calculations using decimal.js
-- Per-agent cost breakdown
-- Aggregated crew-wide metrics
-- Token usage statistics
-- Support for different pricing tiers per model
-- Persistent cost tracking across multiple agent runs
+Notes:
+- Legacy cost APIs (`getLastUsageCost`, `getAccumulatedCosts`, `getAggregatedCosts`) are superseded by metrics methods.
+- Estimated cost values are numbers rounded to 5 decimal places.
 
 ## Changelog
 

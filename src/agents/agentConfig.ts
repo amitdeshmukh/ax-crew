@@ -1,10 +1,8 @@
 import fs from 'fs';
-// Import all the providers
-import { AxAIAnthropic, AxAIOpenAI, AxAIAzureOpenAI, AxAICohere, AxAIDeepSeek, AxAIGoogleGemini, AxAIGroq, AxAIHuggingFace, AxAIMistral, AxAIOllama, AxAITogether, AxAIReka, AxAIGrok } from '@ax-llm/ax';
-// Import Ax types
+// Import Ax factory and MCP transports (as exported by current package)
+import { ai, AxMCPClient, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport, AxDefaultCostTracker } from '@ax-llm/ax'
 import type { AxFunction } from '@ax-llm/ax';
-// Import the MCP client and transports
-import { AxMCPClient, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport } from '@ax-llm/ax'
+// STDIO transport from tools package
 import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
 import { PROVIDER_API_KEYS } from '../config/index.js';
 import type { 
@@ -14,28 +12,29 @@ import type {
   MCPTransportConfig, 
   MCPStdioTransportConfig, 
   MCPHTTPSSETransportConfig,
-  MCPStreambleHTTPTransportConfig
+  MCPStreamableHTTPTransportConfig
 } from '../types.js';
+import type { Provider } from '../types.js';
 
-// Define a mapping from provider names to their respective constructors
-const AIConstructors: Record<string, any> = {
-  'anthropic': AxAIAnthropic,
-  'azure-openai': AxAIAzureOpenAI,
-  'cohere': AxAICohere,
-  'deepseek': AxAIDeepSeek,
-  'google-gemini': AxAIGoogleGemini,
-  'groq': AxAIGroq,
-  'huggingFace': AxAIHuggingFace,
-  'mistral': AxAIMistral,
-  'ollama': AxAIOllama,
-  'openai': AxAIOpenAI,
-  'together': AxAITogether,
-  'reka': AxAIReka,
-  'grok': AxAIGrok
-};
+// Canonical provider slugs supported by ai() factory
+const PROVIDER_CANONICAL = new Set([
+  'openai',
+  'anthropic',
+  'google-gemini',
+  'mistral',
+  'groq',
+  'cohere',
+  'together',
+  'deepseek',
+  'ollama',
+  'huggingface',
+  'openrouter',
+  'azure-openai',
+  'reka',
+  'x-grok'
+]);
 
-// Provider type
-export type Provider = keyof typeof AIConstructors;
+// Provider type lives in src/types.ts
 
 // Type guard to check if config is stdio transport
 export function isStdioTransport(config: MCPTransportConfig): config is MCPStdioTransportConfig {
@@ -48,7 +47,7 @@ export function isHTTPSSETransport(config: MCPTransportConfig): config is MCPHTT
 }
 
 // Type guard to check if config is streamable HTTP transport
-export function isStreambleHTTPTransport(config: MCPTransportConfig): config is MCPStreambleHTTPTransportConfig {
+export function isStreambleHTTPTransport(config: MCPTransportConfig): config is MCPStreamableHTTPTransportConfig {
   return 'mcpEndpoint' in config;
 }
 
@@ -205,11 +204,12 @@ const parseAgentConfig = async (
       throw new Error(`AI agent with name ${agentName} is not configured`);
     }
 
-    // Get the constructor for the AI agent's provider
-    const AIConstructor = AIConstructors[agentConfigData.provider];
-    if (!AIConstructor) {
-      throw new Error(`AI provider ${agentConfigData.provider} is not supported. Did you mean '${agentConfigData.provider.toLowerCase()}'?`);
+    // Enforce canonical provider slug
+    const lower = agentConfigData.provider.toLowerCase();
+    if (!PROVIDER_CANONICAL.has(lower)) {
+      throw new Error(`AI provider ${agentConfigData.provider} is not supported. Use one of: ${Array.from(PROVIDER_CANONICAL).join(', ')}`);
     }
+    const provider = lower as Provider;
 
     // If an API Key property is present, get the API key for the AI agent from the environment variables
     let apiKey = '';
@@ -223,25 +223,30 @@ const parseAgentConfig = async (
       throw new Error(`Provider key name is missing in the agent configuration`);
     }
 
-    // Create an instance of the AI agent and set options
-    const ai = new AIConstructor({
+    // Create a cost tracker instance and pass to ai()
+    const costTracker = new AxDefaultCostTracker();
+
+    // Create an instance of the AI agent via factory
+    const aiArgs: any = {
+      name: provider,
       apiKey,
       config: agentConfigData.ai,
       options: {
         debug: agentConfigData.debug || false,
-        ...agentConfigData.options
+        ...agentConfigData.options,
+        // Attach default cost tracker so usage/costs are recorded by provider layer
+        trackers: [costTracker]
       }
-    });
-    // If an apiURL is provided in the agent config, set it in the AI agent
+    };
     if (agentConfigData.apiURL) {
       try {
-        // Validate apiURL format
         new URL(agentConfigData.apiURL);
-        ai.setAPIURL(agentConfigData.apiURL);
+        aiArgs.apiURL = agentConfigData.apiURL;
       } catch (error) {
         throw new Error(`Invalid apiURL provided: ${agentConfigData.apiURL}`);
-      }      
+      }
     }
+    const aiInstance = ai(aiArgs);
 
     // If an mcpServers config is provided in the agent config, convert to functions
     const mcpFunctions = await initializeMCPServers(agentConfigData);
@@ -265,13 +270,14 @@ const parseAgentConfig = async (
     
     // Return AI instance and Agent parameters
     return {
-      ai,
+      ai: aiInstance,
       name: agentName,
       description: agentConfigData.description,
       signature: agentConfigData.signature,
       functions: agentFunctions,
       subAgentNames: agentConfigData.agents || [],
       examples: agentConfigData.examples || [],
+      tracker: costTracker,
     };
   } catch (error) {
     if (error instanceof Error) {
