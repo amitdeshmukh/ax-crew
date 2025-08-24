@@ -1,4 +1,5 @@
 import type { LabelKeys, MetricsSnapshot, TokenUsage } from './types.js';
+import Big from 'big.js';
 
 type Key = string;
 
@@ -64,7 +65,9 @@ export function recordTokens(labels: LabelKeys, usage: TokenUsage) {
 
 export function recordEstimatedCost(labels: LabelKeys, usd: number) {
   const c = getOrInit(labels);
-  c.estimatedCostUSD += usd || 0;
+  const current = new Big(c.estimatedCostUSD || 0);
+  const addition = new Big(usd || 0);
+  c.estimatedCostUSD = Number(current.plus(addition));
 }
 
 export function recordFunctionCall(labels: LabelKeys, latencyMs: number) {
@@ -92,7 +95,7 @@ export function snapshot(labels: LabelKeys): MetricsSnapshot {
       completionTokens: c.outputTokens,
       totalTokens,
     },
-    estimatedCostUSD: c.estimatedCostUSD,
+    estimatedCostUSD: Number(new Big(c.estimatedCostUSD || 0).round(5)),
     functions: {
       totalFunctionCalls: c.functionCalls,
       totalFunctionLatencyMs: c.functionLatencyMs,
@@ -131,7 +134,7 @@ export function snapshotCrew(crewId: string): MetricsSnapshot {
       acc.durationCount += v.durationCount;
       acc.inputTokens += v.inputTokens;
       acc.outputTokens += v.outputTokens;
-      acc.estimatedCostUSD += v.estimatedCostUSD;
+      acc.estimatedCostUSD = Number(new Big(acc.estimatedCostUSD || 0).plus(v.estimatedCostUSD || 0));
       acc.functionCalls += v.functionCalls;
       acc.functionLatencyMs += v.functionLatencyMs;
     }
@@ -153,7 +156,7 @@ export function snapshotCrew(crewId: string): MetricsSnapshot {
       completionTokens: agg.outputTokens,
       totalTokens,
     },
-    estimatedCostUSD: agg.estimatedCostUSD,
+    estimatedCostUSD: Number(new Big(agg.estimatedCostUSD || 0).round(5)),
     functions: {
       totalFunctionCalls: agg.functionCalls,
       totalFunctionLatencyMs: agg.functionLatencyMs,

@@ -1,4 +1,28 @@
 # Changelog
+## [4.0.1] - 2025-08-24
+
+### Added
+- Dependency: `big.js` for precise accumulation of estimated costs.
+- Dev Dependency: `@types/big.js` for TypeScript support.
+
+### Changed
+- Switched crew cost reporting to metrics-based API. Use `agent.getMetrics()` and `crew.getCrewMetrics()` instead of legacy cost getters.
+- Estimated cost (`estimatedCostUSD`) is now accumulated with Big.js and reported rounded to 5 decimal places.
+- Tests updated to use metrics assertions; added dummy `ANTHROPIC_API_KEY` in test setup to avoid env failures.
+- Test agent signatures updated to new DSL (`query:string -> queryResponse:string`).
+- Aligned with new `@ax-llm/ax` `ai()` and `agent()` factory methods: enforce canonical provider slugs, pass cost tracker via `options.trackers`, and validate `apiURL` when provided.
+- Updated package versions for `@ax-llm/ax` and `@ax-llm/ax-tools`.
+
+### Deprecated
+- Legacy cost APIs (`getLastUsageCost`, `getAccumulatedCosts`, `getAggregatedCosts`) are deprecated in favor of metrics.
+
+### Removed
+- Tests no longer use `getAggregatedCosts`; replaced with metrics assertions.
+
+### Updated
+- README now documents metrics usage and 5-decimal cost rounding, de-emphasizing legacy cost APIs.
+- README Features now includes "Metrics and Cost Tracking"; examples updated to use metrics (`getMetrics`, `getCrewMetrics`).
+
 
 This Changelog format is based on [Keep a Changelog]
 (https://keepachangelog.com/en/1.0.0/), and this project 

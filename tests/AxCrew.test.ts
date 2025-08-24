@@ -1,6 +1,10 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { AxCrew } from '../src/agents';
 import { AxCrewFunctions } from '../src/functions';
+import type { AxCrewConfig } from '../src/index.js';
+
+// Provide dummy API key for tests
+process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'test';
 
 describe('AxCrew', () => {
   // Basic initialization tests
@@ -10,7 +14,7 @@ describe('AxCrew', () => {
         crew: [{
           name: "ResearchAgent",
           description: "A research agent that can search the web for information and provide detailed analysis of search results with proper citations",
-          signature: "input:string -> output:string",
+          signature: "query:string -> queryResponse:string",
           provider: "anthropic",
           providerKeyName: "ANTHROPIC_API_KEY",
           ai: {
@@ -19,7 +23,7 @@ describe('AxCrew', () => {
         }]
       };
       
-      const crew = new AxCrew(config, AxCrewFunctions);
+      const crew = new AxCrew(config as AxCrewConfig, AxCrewFunctions);
       expect(crew).toBeInstanceOf(AxCrew);
     });
 
@@ -36,7 +40,7 @@ describe('AxCrew', () => {
           }
         }]
       };
-      expect(() => new AxCrew(invalidConfig, AxCrewFunctions))
+      expect(() => new AxCrew(invalidConfig as AxCrewConfig, AxCrewFunctions))
         .toThrowError('Agent name cannot be empty');
     });
   });
@@ -50,8 +54,8 @@ describe('AxCrew', () => {
         crew: [
           {
             name: "agent1",
-            description: "A sophisticated agent that processes text input and generates structured analysis with detailed explanations and recommendations",
-            signature: "input:string -> output:string",
+            description: "A sophisticated agent that processes text query and generates structured analysis with detailed explanations and recommendations",
+            signature: "query:string -> queryResponse:string",
             provider: "anthropic",
             providerKeyName: "ANTHROPIC_API_KEY",
             ai: { model: "claude-3-haiku-20240307" }
@@ -59,7 +63,7 @@ describe('AxCrew', () => {
           {
             name: "agent2",
             description: "An advanced processing agent that builds upon agent1's output to provide deeper insights and actionable intelligence",
-            signature: "input:string -> output:string",
+            signature: "query:string -> queryResponse:string",
             provider: "anthropic",
             providerKeyName: "ANTHROPIC_API_KEY",
             ai: { model: "claude-3-haiku-20240307" },
@@ -94,7 +98,7 @@ describe('AxCrew', () => {
         crew: [{
           name: "testAgent",
           description: "A comprehensive testing agent that validates inputs, processes data, and ensures output quality through multiple verification steps",
-          signature: "input:string -> output:string",
+          signature: "query:string -> queryResponse:string",
           provider: "anthropic",
           providerKeyName: "ANTHROPIC_API_KEY",
           ai: { model: "claude-3-haiku-20240307" }
@@ -104,19 +108,19 @@ describe('AxCrew', () => {
       await crew.addAgent('testAgent');
     });
 
-    test('should track costs correctly', async () => {
-      const costs = crew.getAggregatedCosts();
-      expect(costs).toBeDefined();
-      expect(costs).toHaveProperty('totalCost');
-      expect(typeof costs.totalCost).toBe('string');
+    test('should track costs correctly (metrics)', async () => {
+      const metrics = crew.getCrewMetrics();
+      expect(metrics).toBeDefined();
+      expect(metrics).toHaveProperty('estimatedCostUSD');
+      expect(typeof metrics.estimatedCostUSD).toBe('number');
     });
 
-    test('should reset costs', () => {
+    test('should reset costs (metrics)', () => {
       crew.resetCosts();
-      const costs = crew.getAggregatedCosts();
-      expect(costs).toBeDefined();
-      expect(costs).toHaveProperty('totalCost');
-      expect(costs.totalCost).toBe('0');  // Updated to match actual format
+      const metrics = crew.getCrewMetrics();
+      expect(metrics).toBeDefined();
+      expect(metrics).toHaveProperty('estimatedCostUSD');
+      expect(metrics.estimatedCostUSD).toBe(0);
     });
   });
 
@@ -127,7 +131,7 @@ describe('AxCrew', () => {
         crew: [{
           name: "testAgent",
           description: "A comprehensive testing agent that validates inputs, processes data, and ensures output quality through multiple verification steps",
-          signature: "input:string -> output:string",
+          signature: "query:string -> queryResponse:string",
           provider: "anthropic",
           providerKeyName: "ANTHROPIC_API_KEY",
           ai: { model: "claude-3-haiku-20240307" }

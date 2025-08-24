@@ -14,7 +14,8 @@ const agentConfig: AxCrewConfig = {
       providerKeyName: "GEMINI_API_KEY",
       ai: {
         model: "gemini-2.5-flash-lite",
-        maxTokens: 4000
+        maxTokens: 4000,
+        stream: true
       },
       options: {
         debug: true,
@@ -29,7 +30,8 @@ const agentConfig: AxCrewConfig = {
       providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
         model: "claude-3-haiku-20240307",
-        maxTokens: 4000
+        maxTokens: 4000,
+        stream: true
       },
       options: {
         debug: true,
@@ -61,10 +63,6 @@ async function main() {
     const { article } = await writer.forward({
       topic: "Quantum Computing Benefits",
     });
-    console.log("Writer getUsage:", (writer as any).getUsage?.());
-    console.log("Researcher getUsage:", (researcher as any).getUsage?.());
-    console.log("Crew getUsage:", (crew as any).getUsage?.());
-
 
     // Print the article
     console.log("Article:", article);

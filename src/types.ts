@@ -171,7 +171,7 @@ type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPSSETransportConfig | 
  * @property {AxModelConfig & { model: string }} ai - The AI model configuration to be passed to the agent.
  * @property {boolean} debug - Whether to enable debug mode.
  * @property {string} apiURL - Set this if you are using a custom API URL e.g. ollama on localhost.
- * @property {Partial<AxProgramForwardOptions<any>>} options - Agent options including thinkingTokenBudget, showThoughts, etc. Refer to the Ax documentation for more details.
+ * @property {Partial<AxProgramForwardOptions<any>> & Record<string, any>} options - Agent options including thinkingTokenBudget, showThoughts, etc. Also allows arbitrary provider-specific keys.
  * @property {string[]} functions - Function names to be used by the agent.
  * @property {string[]} agents - Sub-agent available to the agent.
  * @property {Record<string, any>[]} examples - DSPy examples for the agent to learn from.
@@ -186,7 +186,7 @@ interface AgentConfig {
   ai: AxModelConfig & { model: string };
   debug?: boolean;
   apiURL?: string;
-  options?: Partial<AxProgramForwardOptions<any>>;
+  options?: Partial<AxProgramForwardOptions<any>> & Record<string, any>;
   functions?: string[];
   agents?: string[];
   examples?: Array<Record<string, any>>;

@@ -1,7 +1,8 @@
 import { AxCrew } from "../dist/index.js";
+import type { AxCrewConfig } from "../src/index.js";
 
 // Define the crew configuration
-const config = {
+const config: AxCrewConfig = {
   crew: [
     {
       name: "MathAgent",
@@ -62,10 +63,11 @@ const main = async (): Promise<void> => {
 
     console.log(`\nAnswer: ${JSON.stringify(managerResponse.answer, null, 2)}`);
 
-    // Print usage costs
-    console.log("\nUsage:\n+++++++++++++++++++++++++++++++++");
-    console.log("Manager Agent:", JSON.stringify(managerAgent.getAccumulatedCosts(), null, 2));
-    console.log("Total Cost:", JSON.stringify(crew.getAggregatedCosts(), null, 2));
+    // Print metrics
+    console.log("\nMetrics:\n+++++++++++++++++++++++++++++++++");
+    console.log("Manager Agent Metrics:", JSON.stringify((managerAgent as any).getMetrics?.(), null, 2));
+    console.log("Math Agent Metrics:", JSON.stringify((mathAgent as any).getMetrics?.(), null, 2));
+    console.log("Crew Metrics:", JSON.stringify((crew as any).getCrewMetrics?.(), null, 2));
   }
 };
 

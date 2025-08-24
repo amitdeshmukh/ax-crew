@@ -1,10 +1,11 @@
 import { AxCrew } from "../dist/index.js";
+import type { AxCrewConfig } from "../src/index.js";
 
 import dotenv from "dotenv";
 dotenv.config();
 
 // Define the crew configuration
-const config = {
+const config: AxCrewConfig = {
   crew: [
     {
       name: "ManagerAgent",
@@ -75,11 +76,11 @@ const main = async (): Promise<void> => {
       }
     }
 
-    // Print usage costs
-    console.log("\nUsage:\n+++++++++++++++++++++++++++++++++");
-    console.log("Manager Agent Cost in $:", JSON.stringify(managerAgent?.getAccumulatedCosts()?.totalCost, null, 2));
-    console.log("Math Agent Cost in $:", JSON.stringify(mathAgent?.getAccumulatedCosts()?.totalCost, null, 2));
-    console.log("Total Cost in $:", JSON.stringify(crew.getAggregatedCosts()?.totalCost, null, 2));
+    // Print metrics
+    console.log("\nMetrics:\n+++++++++++++++++++++++++++++++++");
+    console.log("Manager Agent Metrics:", JSON.stringify((managerAgent as any)?.getMetrics?.(), null, 2));
+    console.log("Math Agent Metrics:", JSON.stringify((mathAgent as any)?.getMetrics?.(), null, 2));
+    console.log("Crew Metrics:", JSON.stringify((crew as any)?.getCrewMetrics?.(), null, 2));
 };
 
 main()
