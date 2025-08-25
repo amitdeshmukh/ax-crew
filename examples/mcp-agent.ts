@@ -1,15 +1,15 @@
-import { AxCrew } from "../dist/index.js";
-import type { AxCrewConfig } from "../dist/index.js";
+import { AxCrew, AxCrewConfig } from "../dist/index.js";
 
 import dotenv from "dotenv";
 dotenv.config();
 
 // Define the crew configuration
-const config: AxCrewConfig = {
+const config = {
   crew: [
     {
       name: "MapsAgent",
       description: "A specialized agent with access to Google Maps APIs that can: geocode addresses to coordinates and vice versa, search for and get details about places, calculate travel distances and times between multiple locations, provide elevation data, and generate navigation directions between points.",
+      prompt: "You are a precise geospatial assistant with expert knowledge of Google Maps APIs. Answer user queries by combining place search, geocoding, distance matrix, elevation, and directions. Provide concise, actionable answers, include travel mode assumptions, and cite uncertainties. When location is ambiguous, ask a brief clarifying question before proceeding.",
       signature: 'userQuery:string "a question to be answered" -> answer:string "the answer to the question"',
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
@@ -38,6 +38,7 @@ const config: AxCrewConfig = {
     {
       name: "ManagerAgent",
       description: "Completes a user specified task",
+      prompt: "You are a manager agent that orchestrates tools and sub-agents. Read the user's objective, optionally produce a short plan, then call the MapsAgent when geospatial knowledge is needed. Keep answers direct and avoid extraneous commentary.",
       signature:
         'question:string "a question to be answered" -> answer:string "the answer to the question"',
       provider: "openai", 
@@ -73,7 +74,7 @@ const config: AxCrewConfig = {
 };
 
 // Create a new instance of AxCrew with the config
-const crew = new AxCrew(config);
+const crew = new AxCrew(config as AxCrewConfig);
 
 // Add the agents to the crew
 await crew.addAllAgents();

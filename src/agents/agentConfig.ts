@@ -224,7 +224,7 @@ const parseAgentConfig = async (
     }
 
     // Create a cost tracker instance and pass to ai()
-    const costTracker = new AxDefaultCostTracker();
+    const costTracker = new AxDefaultCostTracker(((agentConfigData as any).options?.costTracking) || undefined);
 
     // Create an instance of the AI agent via factory
     const aiArgs: any = {
@@ -273,6 +273,7 @@ const parseAgentConfig = async (
       ai: aiInstance,
       name: agentName,
       description: agentConfigData.description,
+      definition: (agentConfigData as any).definition ?? (agentConfigData as any).prompt,
       signature: agentConfigData.signature,
       functions: agentFunctions,
       subAgentNames: agentConfigData.agents || [],
