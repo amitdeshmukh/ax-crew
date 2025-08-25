@@ -1,4 +1,14 @@
 # Changelog
+## [4.1.0] - 2025-08-25
+
+### Added
+- Agent persona support via `definition` with validation (>= 100 chars).
+- `prompt` alias for persona; `definition` takes precedence when both provided.
+
+### Changed
+- README updated to document `definition`/`prompt` usage with example.
+- Example `examples/mcp-agent.ts` demonstrates `prompt` in agent config.
+
 ## [4.0.1] - 2025-08-24
 
 ### Added

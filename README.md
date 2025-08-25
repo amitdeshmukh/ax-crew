@@ -174,6 +174,25 @@ Both methods support the same configuration structure and options. Choose the on
   - Modify configurations at runtime
   - Keep everything in one file for simpler projects
 
+### Agent Persona: definition and prompt
+
+- **definition**: Detailed persona/program description used as the system prompt. Recommended for precise control. Must be at least 100 characters.
+- **prompt**: An alias for definition for human clarity. If both are provided, **definition** takes precedence.
+
+Add either field to any agent config. The chosen value becomes the Ax agent's underlying program description (system prompt).
+
+```json
+{
+  "name": "Planner",
+  "description": "Creates a plan to complete a task",
+  "prompt": "You are a meticulous planning assistant. Produce concise, executable step-by-step plans with clear justifications, constraints, and assumptions. Prefer brevity, avoid fluff, and ask for missing critical details before proceeding when necessary.",
+  "signature": "task:string -> plan:string",
+  "provider": "google-gemini",
+  "providerKeyName": "GEMINI_API_KEY",
+  "ai": { "model": "gemini-1.5-flash", "temperature": 0 }
+}
+```
+
 ### Agent Examples
 You can provide examples to guide the behavior of your agents using the `examples` field in the agent configuration. Examples help the agent understand the expected input/output format and improve its responses.
 

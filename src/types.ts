@@ -180,6 +180,16 @@ type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPSSETransportConfig | 
 interface AgentConfig {
   name: string;
   description: string;
+  /**
+   * Optional detailed persona/program definition. If provided, becomes the system prompt.
+   * Must be at least 100 characters per Ax semantics.
+   */
+  definition?: string;
+  /**
+   * Optional alias for definition for clarity. If provided and definition is omitted,
+   * this will be used as the program definition/system prompt.
+   */
+  prompt?: string;
   signature: string | AxSignature;
   provider: Provider;
   providerKeyName?: string;

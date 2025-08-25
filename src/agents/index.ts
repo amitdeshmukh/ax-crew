@@ -27,6 +27,7 @@ interface ParsedAgentConfig {
   ai: AxAI;
   name: string;
   description: string;
+  definition?: string;
   signature: string | AxSignature;
   functions: (
     | AxFunction
@@ -58,6 +59,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     options: Readonly<{
       name: string;
       description: string;
+      definition?: string;
       signature: string | AxSignature;
       agents?: AxAgentic<any, any>[] | undefined;
       functions?: (AxFunction | (() => AxFunction))[] | undefined;
@@ -347,6 +349,7 @@ class AxCrew {
         {
           name,
           description,
+          definition: (agentConfig as any).definition,
           signature,
           functions: uniqueFunctions,
           agents: uniqueSubAgents,
