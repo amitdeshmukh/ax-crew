@@ -1,20 +1,18 @@
 ![image](axcrew.png)
 
-# AxCrew - A Crew of AI Agents (built with AxLLM)
+### AxCrew — build a crew of AI agents with shared state (powered by AxLLM)
 
-This repo simplifies development of [AxLLM](https://axllm.dev) AI Agents by using config to instantiate agents. This means you can write a library of functions, and quickly invoke AI agents to use them using a simple configuration file.
+AxCrew lets you define a team of AI agents in config and run them together with shared state, tools, streaming, MCP, and built‑in metrics/cost tracking. Bring your own functions or use the provided registry.
 
-## Features
-- **Crew Configuration**: Define a crew of agents in a JSON file. (see [agentConfig.json](agentConfig.json) as an example)
-- **State Management**: Share state across agents in a crew, as well as with functions used by those agents.
-- **Task Execution**: Plan and execute tasks using agents in the crew.
-- **Streaming Support**: Stream agent responses in real-time for better user experience and faster feedback.
-- **Model Context Protocol (MCP)**: Support for MCP to allow agents to use MCP servers.
-- **Metrics and Cost Tracking**: Built-in per-agent and per-crew metrics, including token usage and estimated USD costs (5-decimal rounding).
+### Why AxCrew
+- **Config-first crews**: Declare agents once; instantiate on demand.
+- **Shared state**: Simple key/value state all agents can read/write.
+- **Sub‑agents and tools**: Compose agents and functions cleanly.
+- **Streaming**: Real‑time token streaming for responsive UX.
+- **MCP**: Connect agents to MCP servers (STDIO, HTTP SSE, Streamable HTTP).
+- **Metrics & costs**: Per‑agent and crew snapshots, with estimated USD.
 
-## Getting Started
-
-### Installation
+### Install
 Install this package:
 ```bash
 npm install @amitdeshmukh/ax-crew
@@ -22,11 +20,22 @@ npm install @amitdeshmukh/ax-crew
 AxLLM is a peer dependency, so you will need to install it separately. 
 
 ```bash
-npm install @ax-llm/ax
+npm install @ax-llm/ax @ax-llm/ax-tools
 ```
 
-### TypeScript Support
-This package includes TypeScript declarations and provides full type safety. Here's how to use it with TypeScript:
+Requirements: Node.js >= 21.
+
+### Environment
+Set provider keys in your environment. Example `.env`:
+```bash
+GEMINI_API_KEY=...
+ANTHROPIC_API_KEY=...
+OPENAI_API_KEY=...
+```
+In each agent config, set `providerKeyName` to the env var name.
+
+### Quickstart
+This package includes TypeScript declarations and provides type safety.
 
 ```typescript
 import { AxCrew, AxCrewFunctions, FunctionRegistryType, StateInstance } from '@amitdeshmukh/ax-crew';
@@ -82,12 +91,10 @@ crew.state.set('key', 'value');
 const value: string = crew.state.get('key');
 
 // Add agents to the crew
-const agents = crew.addAgentsToCrew(['Planner']);
-const planner = agents?.get('Planner');
+await crew.addAgentsToCrew(['Planner']);
+const planner = crew.agents?.get('Planner');
 
 if (planner) {
-  // Agent usage with function overloads
-  // Direct usage - AI config from agent construction is used
   const response = await planner.forward({ task: "Plan something" });
   
   // Sub-agent usage - when used by another agent (AI is ignored and agent's own config is used)
@@ -109,8 +116,14 @@ Key TypeScript features:
 - Comprehensive type safety for agent operations and responses
 - Usage cost tracking with proper types
 
-### Environment Setup
-Refer to the [.env.example](.env.example) file for the required environment variables. These will need to be set in the environment where the agents are run.
+### Concepts at a glance
+- **Agent**: An LLM program with a `signature`, `provider`, `ai` model config, optional `examples`, and optional `mcpServers`.
+- **Sub‑agents**: List other agent names in `agents` to compose behaviors.
+- **Functions (tools)**: Register callable functions via a registry and reference by name in agent `functions`.
+- **State**: `crew.state.set/get/getAll()` shared across all agents.
+- **Persona**: Use `definition` (preferred) or `prompt` to set the system program. If both are present, `definition` wins.
+- **Streaming**: Use `streamingForward()` for token streams.
+- **Metrics**: Per‑agent `getMetrics()` + crew‑level `getCrewMetrics()` snapshots.
 
 ## Usage
 
@@ -177,7 +190,7 @@ Both methods support the same configuration structure and options. Choose the on
 ### Agent Persona: definition and prompt
 
 - **definition**: Detailed persona/program description used as the system prompt. Recommended for precise control. Must be at least 100 characters.
-- **prompt**: An alias for definition for human clarity. If both are provided, **definition** takes precedence.
+- **prompt**: An alias for `definition`. If both are provided, **definition** takes precedence.
 
 Add either field to any agent config. The chosen value becomes the Ax agent's underlying program description (system prompt).
 
