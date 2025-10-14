@@ -31,8 +31,27 @@ Set provider keys in your environment. Example `.env`:
 GEMINI_API_KEY=...
 ANTHROPIC_API_KEY=...
 OPENAI_API_KEY=...
+AZURE_OPENAI_API_KEY=...
 ```
 In each agent config, set `providerKeyName` to the env var name.
+
+#### Azure OpenAI
+- Use provider `azure-openai`.
+- Set `providerKeyName` to `AZURE_OPENAI_API_KEY`.
+- Set `apiURL` to your Azure endpoint (e.g., `https://your-resource.openai.azure.com`).
+
+Minimal example agent config:
+```json
+{
+  "name": "Writer",
+  "description": "Writes concise summaries",
+  "signature": "topic:string -> summary:string",
+  "provider": "azure-openai",
+  "providerKeyName": "AZURE_OPENAI_API_KEY",
+  "ai": { "model": "gpt-4o-mini", "temperature": 0 },
+  "apiURL": "https://your-resource.openai.azure.com"
+}
+```
 
 ### Quickstart
 This package includes TypeScript declarations and provides type safety.

@@ -1,4 +1,13 @@
 # Changelog
+## [4.1.2] - 2025-10-14
+
+### Added
+- Azure OpenAI provider key support via `AZURE_OPENAI_API_KEY`.
+- Documentation: README Environment now lists Azure and includes a minimal Azure config example (`provider: "azure-openai"` + `apiURL`).
+
+### Changed
+- TypeScript config now includes Node types (`types: ["node"]`) to resolve `process` usage in `src/config/index.ts`.
+
 ## [4.1.0] - 2025-08-25
 
 ### Added
