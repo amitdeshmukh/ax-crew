@@ -35,12 +35,17 @@ AZURE_OPENAI_API_KEY=...
 ```
 In each agent config, set `providerKeyName` to the env var name.
 
-#### Azure OpenAI
-- Use provider `azure-openai`.
-- Set `providerKeyName` to `AZURE_OPENAI_API_KEY`.
-- Set `apiURL` to your Azure endpoint (e.g., `https://your-resource.openai.azure.com`).
+#### Provider-specific arguments (`providerArgs`)
+Some providers require extra top-level configuration beyond `ai.model` (e.g., Azure deployments or Gemini project/region). You can pass these via `providerArgs`; AxCrew forwards them to the underlying Ax factory with type alignment for popular providers.
 
-Minimal example agent config:
+Supported mappings:
+- `azure-openai`: `resourceName`, `deploymentName`, `version` (if `resourceName` omitted and `apiURL` set, `apiURL` is used as full endpoint)
+- `anthropic`: `projectId`, `region`
+- `google-gemini`: `projectId`, `region`, `endpointId`
+- `openrouter`: `referer`, `title`
+- `ollama`: `url`
+
+Azure example with `providerArgs`:
 ```json
 {
   "name": "Writer",
@@ -49,7 +54,11 @@ Minimal example agent config:
   "provider": "azure-openai",
   "providerKeyName": "AZURE_OPENAI_API_KEY",
   "ai": { "model": "gpt-4o-mini", "temperature": 0 },
-  "apiURL": "https://your-resource.openai.azure.com"
+  "apiURL": "https://your-resource.openai.azure.com",  "providerArgs": {
+    "resourceName": "your-resource",
+    "deploymentName": "gpt-4o-mini",
+    "version": "api-version=2024-02-15-preview"
+  }
 }
 ```
 

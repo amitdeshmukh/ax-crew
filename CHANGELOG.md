@@ -1,4 +1,25 @@
 # Changelog
+
+## [5.0.0] - 2025-10-16
+
+### Added
+- Provider-specific arguments via `providerArgs` in `AgentConfig` to pass through typed provider params to the underlying Ax factory.
+- Typed forwarding for common providers in `parseAgentConfig`:
+  - azure-openai: `resourceName`, `deploymentName`, `version` (falls back to `apiURL` as `resourceName` if provided)
+  - anthropic: `projectId`, `region` (on Vertex AI)
+  - google-gemini: `projectId`, `region`, `endpointId`
+  - openrouter: `referer`, `title`
+  - ollama: `url`
+- Example `examples/providerArgs.ts` demonstrating `providerArgs` with Azure OpenAI.
+- JSDoc function hints for cost/usage APIs (`getMetrics`, `resetMetrics`, `resetCosts`, `getCrewMetrics`, `resetCrewMetrics`, and metrics registry helpers).
+
+### Docs
+- README section documenting `providerArgs` usage, supported providers, and Azure configuration examples.
+
+### Notes
+- Existing configs continue to work. For Azure, you can still set `apiURL`; when `resourceName` is omitted, the code uses `apiURL` as the `resourceName` (full endpoint) for convenience.
+
+# Changelog
 ## [4.1.2] - 2025-10-14
 
 ### Added
