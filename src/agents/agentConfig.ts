@@ -1,6 +1,13 @@
 import fs from 'fs';
 // Import Ax factory and MCP transports (as exported by current package)
 import { ai, AxMCPClient, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport, AxDefaultCostTracker } from '@ax-llm/ax'
+import type {
+  AxAIAzureOpenAIArgs,
+  AxAIAnthropicArgs,
+  AxAIGoogleGeminiArgs,
+  AxAIOpenRouterArgs,
+  AxAIOllamaArgs
+} from '@ax-llm/ax';
 import type { AxFunction } from '@ax-llm/ax';
 // STDIO transport from tools package
 import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
@@ -245,6 +252,36 @@ const parseAgentConfig = async (
       } catch (error) {
         throw new Error(`Invalid apiURL provided: ${agentConfigData.apiURL}`);
       }
+    }
+    // Forward provider-specific arguments with type-safety for Azure OpenAI
+    const providerArgs = (agentConfigData as any).providerArgs;
+    if (provider === 'azure-openai') {
+      type AzureArgs = Pick<AxAIAzureOpenAIArgs<string>, 'resourceName' | 'deploymentName' | 'version'>;
+      const az: Partial<AzureArgs> = providerArgs ?? {};
+      // If users supplied apiURL instead of resourceName, accept it (Ax supports full URL as resourceName)
+      if (!az.resourceName && agentConfigData.apiURL) {
+        az.resourceName = agentConfigData.apiURL as any;
+      }
+      Object.assign(aiArgs, az);
+    } else if (provider === 'anthropic') {
+      type AnthropicArgs = Pick<AxAIAnthropicArgs<string>, 'projectId' | 'region'>;
+      const an: Partial<AnthropicArgs> = providerArgs ?? {};
+      Object.assign(aiArgs, an);
+    } else if (provider === 'google-gemini') {
+      type GeminiArgs = Pick<AxAIGoogleGeminiArgs<string>, 'projectId' | 'region' | 'endpointId'>;
+      const g: Partial<GeminiArgs> = providerArgs ?? {};
+      Object.assign(aiArgs, g);
+    } else if (provider === 'openrouter') {
+      type OpenRouterArgs = Pick<AxAIOpenRouterArgs<string>, 'referer' | 'title'>;
+      const o: Partial<OpenRouterArgs> = providerArgs ?? {};
+      Object.assign(aiArgs, o);
+    } else if (provider === 'ollama') {
+      type OllamaArgs = Pick<AxAIOllamaArgs<string>, 'url'>;
+      const ol: Partial<OllamaArgs> = providerArgs ?? {};
+      Object.assign(aiArgs, ol);
+    } else if (providerArgs && typeof providerArgs === 'object') {
+      // Generic pass-through for other providers if needed in the future
+      Object.assign(aiArgs, providerArgs);
     }
     const aiInstance = ai(aiArgs);
 

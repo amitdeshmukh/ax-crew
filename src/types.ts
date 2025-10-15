@@ -196,6 +196,11 @@ interface AgentConfig {
   ai: AxModelConfig & { model: string };
   debug?: boolean;
   apiURL?: string;
+  /**
+   * Provider-specific arguments that are forwarded to the underlying Ax factory.
+   * Example (azure-openai): { resourceName, deploymentName, version }
+   */
+  providerArgs?: Record<string, unknown>;
   options?: Partial<AxProgramForwardOptions<any>> & Record<string, any>;
   functions?: string[];
   agents?: string[];
