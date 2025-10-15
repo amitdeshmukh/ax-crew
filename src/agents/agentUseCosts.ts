@@ -15,6 +15,10 @@ import type {
 export class StateFulAxAgentUsage {
   static STATE_KEY_PREFIX = 'agent_usage_';
 
+  /**
+   * Compute usage costs given a model usage record and model pricing info.
+   * Returns null if inputs are invalid. Token-based costs are computed with high precision.
+   */
   static calculateCost(modelUsage: ModelUsage, modelInfo: ModelInfo): UsageCost | null {
     // Handle both direct properties and nested tokens structure
     const promptTokens = (modelUsage as any).tokens?.promptTokens ?? modelUsage.promptTokens;
@@ -59,6 +63,10 @@ export class StateFulAxAgentUsage {
     }
   }
 
+  /**
+   * Persist or aggregate the cost for an agent in the shared crew state.
+   * No-op if cost is null.
+   */
   static trackCostInState(agentName: string, cost: UsageCost | null, state: StateInstance) {
     // If cost is null, skip tracking
     if (!cost) return;
@@ -90,6 +98,9 @@ export class StateFulAxAgentUsage {
     }
   }
 
+  /**
+   * Aggregate and return total costs across all agents from the shared crew state.
+   */
   static getAggregatedCosts(state: StateInstance): AggregatedCosts {
     const allState = state.getAll();
     const agentCosts: Record<string, UsageCost> = {};
@@ -128,6 +139,9 @@ export class StateFulAxAgentUsage {
     };
   }
 
+  /**
+   * Remove all stored per-agent costs from the shared crew state.
+   */
   static resetCosts(state: StateInstance) {
     const allState = state.getAll();
     Object.keys(allState).forEach(key => {

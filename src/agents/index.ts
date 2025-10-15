@@ -238,10 +238,20 @@ class StatefulAxAgent extends AxAgent<any, any> {
   getAccumulatedCosts(): UsageCost | null { return null; }
 
   // Metrics API for this agent
+  /**
+   * Get the current metrics snapshot for this agent.
+   * Includes request counts, error rates, token usage, estimated USD cost, and function call stats.
+   *
+   * @returns A metrics snapshot scoped to this agent within its crew.
+   */
   getMetrics() {
     const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
     return MetricsRegistry.snapshot({ crewId, agent: this.agentName } as any);
   }
+  /**
+   * Reset all tracked metrics for this agent (does not affect other agents).
+   * Call this to start fresh measurement windows for the agent.
+   */
   resetMetrics(): void {
     const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
     MetricsRegistry.reset({ crewId, agent: this.agentName } as any);
@@ -499,7 +509,8 @@ class AxCrew {
 
 
   /**
-   * Resets all cost tracking for the crew
+   * Resets all cost and usage tracking for the entire crew.
+   * Also calls each agent's `resetUsage` (if available) and clears crew-level metrics.
    */
   resetCosts(): void {
     // Reset AxAgent built-in usage and our metrics registry
@@ -513,9 +524,19 @@ class AxCrew {
   }
 
   // Metrics API
+  /**
+   * Get an aggregate metrics snapshot for the entire crew.
+   * Sums requests, errors, tokens, and estimated cost across all agents in the crew.
+   *
+   * @returns Crew-level metrics snapshot.
+   */
   getCrewMetrics() {
     return MetricsRegistry.snapshotCrew(this.crewId);
   }
+  /**
+   * Reset all tracked metrics for the entire crew.
+   * Use to clear totals before a new measurement period.
+   */
   resetCrewMetrics(): void {
     MetricsRegistry.reset({ crewId: this.crewId });
   }

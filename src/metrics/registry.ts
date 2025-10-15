@@ -44,6 +44,12 @@ function getOrInit(labels: LabelKeys): Counters {
   return c;
 }
 
+/**
+ * Record a completed request.
+ * @param labels Crew/agent/provider/model identifiers
+ * @param streaming Whether this was a streaming request
+ * @param durationMs Duration in milliseconds
+ */
 export function recordRequest(labels: LabelKeys, streaming: boolean, durationMs: number) {
   const c = getOrInit(labels);
   c.requests += 1;
@@ -52,17 +58,26 @@ export function recordRequest(labels: LabelKeys, streaming: boolean, durationMs:
   c.durationCount += 1;
 }
 
+/**
+ * Record an error occurrence for the given labels.
+ */
 export function recordError(labels: LabelKeys) {
   const c = getOrInit(labels);
   c.errors += 1;
 }
 
+/**
+ * Record token usage for a request (prompt and completion).
+ */
 export function recordTokens(labels: LabelKeys, usage: TokenUsage) {
   const c = getOrInit(labels);
   c.inputTokens += usage.promptTokens || 0;
   c.outputTokens += usage.completionTokens || 0;
 }
 
+/**
+ * Add estimated cost (USD) to the cumulative total for the labels.
+ */
 export function recordEstimatedCost(labels: LabelKeys, usd: number) {
   const c = getOrInit(labels);
   const current = new Big(c.estimatedCostUSD || 0);
@@ -70,12 +85,18 @@ export function recordEstimatedCost(labels: LabelKeys, usd: number) {
   c.estimatedCostUSD = Number(current.plus(addition));
 }
 
+/**
+ * Record a function call invocation and add its latency to totals.
+ */
 export function recordFunctionCall(labels: LabelKeys, latencyMs: number) {
   const c = getOrInit(labels);
   c.functionCalls += 1;
   c.functionLatencyMs += latencyMs || 0;
 }
 
+/**
+ * Get a metrics snapshot for specific labels (crew + agent + optional provider/model).
+ */
 export function snapshot(labels: LabelKeys): MetricsSnapshot {
   const c = getOrInit(labels);
   const totalTokens = c.inputTokens + c.outputTokens;
@@ -103,6 +124,9 @@ export function snapshot(labels: LabelKeys): MetricsSnapshot {
   };
 }
 
+/**
+ * Reset metrics for specific labels, or clear all if no labels provided.
+ */
 export function reset(labels?: LabelKeys) {
   if (!labels) {
     store.clear();
@@ -112,6 +136,9 @@ export function reset(labels?: LabelKeys) {
   store.delete(k);
 }
 
+/**
+ * Aggregate a crew-wide metrics snapshot across all agents in the crew.
+ */
 export function snapshotCrew(crewId: string): MetricsSnapshot {
   const empty: Counters = {
     requests: 0,
