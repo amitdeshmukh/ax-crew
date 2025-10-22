@@ -33,43 +33,17 @@ ANTHROPIC_API_KEY=...
 OPENAI_API_KEY=...
 AZURE_OPENAI_API_KEY=...
 ```
-In each agent config, set `providerKeyName` to the env var name.
+In each agent config, set `providerKeyName` to the env var name. AxCrew resolves the key at runtime by reading `process.env[providerKeyName]` in Node or `globalThis[providerKeyName]` in the browser. Ensure your env is loaded (for example, import `dotenv/config` in Node) before creating the crew.
 
 #### Provider-specific arguments (`providerArgs`)
-Some providers require extra top-level configuration beyond `ai.model` (e.g., Azure deployments or Gemini project/region). You can pass these via `providerArgs`; AxCrew forwards them to the underlying Ax factory with type alignment for popular providers.
-
-Supported mappings:
-- `azure-openai`: `resourceName`, `deploymentName`, `version` (if `resourceName` omitted and `apiURL` set, `apiURL` is used as full endpoint)
-- `anthropic`: `projectId`, `region`
-- `google-gemini`: `projectId`, `region`, `endpointId`
-- `openrouter`: `referer`, `title`
-- `ollama`: `url`
-
-Azure example with `providerArgs`:
-```json
-{
-  "name": "Writer",
-  "description": "Writes concise summaries",
-  "signature": "topic:string -> summary:string",
-  "provider": "azure-openai",
-  "providerKeyName": "AZURE_OPENAI_API_KEY",
-  "ai": { "model": "gpt-4o-mini", "temperature": 0 },
-  "apiURL": "https://your-resource.openai.azure.com",  "providerArgs": {
-    "resourceName": "your-resource",
-    "deploymentName": "gpt-4o-mini",
-    "version": "api-version=2024-02-15-preview"
-  }
-}
-```
+Some providers require extra top-level configuration beyond `ai.model` (for example, Azure deployment details or Vertex AI project/region). Pass these via `providerArgs`. AxCrew forwards `providerArgs` to Ax unchanged; validation and semantics are handled by Ax. Refer to Ax provider docs for supported fields.
 
 ### Quickstart
-This package includes TypeScript declarations and provides type safety.
 
 ```typescript
 import { AxCrew, AxCrewFunctions, FunctionRegistryType, StateInstance } from '@amitdeshmukh/ax-crew';
 import type { AxFunction } from '@ax-llm/ax';
 
-// Type-safe configuration
 const config = {
   crew: [{
     name: "Planner",
@@ -156,25 +130,7 @@ Key TypeScript features:
 ## Usage
 
 ### Initializing a Crew
-A Crew is a team of agents that work together to achieve a common goal. You can configure your crew in two ways:
-
-1. Using a JSON configuration file that defines the agents in the crew, along with their individual configurations.
-2. Directly passing a JSON object with the crew configuration.
-
-#### Using a Configuration File
-See [agentConfig.json](agentConfig.json) for an example configuration file.
-
-```javascript
-// Import the AxCrew class
-import { AxCrew } from '@amitdeshmukh/ax-crew';
-
-// Create a new instance of AxCrew using a config file
-const configFilePath = './agentConfig.json';
-const crew = new AxCrew(configFilePath);
-```
-
-#### Using a Direct Configuration Object
-You can also pass the configuration directly as a JSON object:
+Pass a JSON object to the `AxCrew` constructor:
 
 ```javascript
 // Import the AxCrew class
@@ -205,15 +161,7 @@ const config = {
 const crew = new AxCrew(config);
 ```
 
-Both methods support the same configuration structure and options. Choose the one that best fits your use case:
-- Use a configuration file when you want to:
-  - Keep your configuration separate from your code
-  - Share configurations across different projects
-  - Version control your configurations
-- Use a direct configuration object when you want to:
-  - Generate configurations dynamically
-  - Modify configurations at runtime
-  - Keep everything in one file for simpler projects
+AxCrew no longer supports reading from a configuration file to remain browser-compatible.
 
 ### Agent Persona: definition and prompt
 
@@ -417,7 +365,7 @@ An example of how to complete a task using the agents is shown below. The `Plann
 import { AxCrew, AxCrewFunctions } from '@amitdeshmukh/ax-crew';
 
 // Create a new instance of AxCrew
-const crew = new AxCrew('./agentConfig.json', AxCrewFunctions);
+const crew = new AxCrew(config, AxCrewFunctions);
 crew.addAgentsToCrew(['Planner', 'Calculator', 'Manager']);
 
 // Get agent instances
@@ -449,7 +397,7 @@ The package supports streaming responses from agents, allowing you to receive an
 import { AxCrew, AxCrewFunctions } from '@amitdeshmukh/ax-crew';
 
 // Create and initialize crew as shown above
-const crew = new AxCrew('./agentConfig.json', AxCrewFunctions);
+const crew = new AxCrew(config, AxCrewFunctions);
 await crew.addAgentsToCrew(['Planner']);
 
 const planner = crew.agents.get("Planner");
@@ -666,7 +614,7 @@ MCP functions are automatically available to agents once the servers are configu
 import { AxCrew } from '@amitdeshmukh/ax-crew';
 
 // Create crew with MCP-enabled agents
-const crew = new AxCrew('./agentConfig.json');
+const crew = new AxCrew(config);
 await crew.addAgent('DataAnalyst'); // Agent with MCP servers configured
 
 const analyst = crew.agents.get('DataAnalyst');

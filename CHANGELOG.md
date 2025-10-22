@@ -1,5 +1,27 @@
 # Changelog
 
+## [6.0.0] - 2025-10-22
+
+### Breaking
+- Config is now object-only to be browser-safe. File-path based configs are no longer supported. Load JSON yourself and pass `{ crew: [...] }`.
+
+### Added
+- Runtime API key resolution via `providerKeyName`. Keys are read from `process.env[providerKeyName]` in Node or `globalThis[providerKeyName]` in the browser.
+- Updated examples to use `dotenv/config` to ensure keys are available at runtime.
+
+### Changed
+- Removed reliance on a hardcoded `PROVIDER_API_KEYS` map; providers read secrets using the user-supplied env var name.
+- `providerArgs` are forwarded unchanged to Ax; validation and semantics are handled by Ax provider implementations.
+- Docs updated: object-only config, env resolution behavior, providerArgs guidance.
+
+### Removed
+- Hardcoded provider lists/registries and the old `providers.ts` list file.
+- Temporary removal of router/balancer helpers and related examples to simplify this refactor.
+
+### Migration notes
+- If you previously passed a config file path, read the file yourself and pass the parsed object to `new AxCrew(config)`.
+- Set `providerKeyName` to the exact environment variable name holding the API key. Ensure env is loaded before constructing the crew (e.g., `import 'dotenv/config'`).
+
 ## [5.0.0] - 2025-10-16
 
 ### Added

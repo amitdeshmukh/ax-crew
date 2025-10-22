@@ -7,31 +7,23 @@ dotenv.config();
 const config = {
   crew: [
     {
-      name: "MapsAgent",
-      description: "A specialized agent with access to Google Maps APIs that can: geocode addresses to coordinates and vice versa, search for and get details about places, calculate travel distances and times between multiple locations, provide elevation data, and generate navigation directions between points.",
-      prompt: "You are a precise geospatial assistant with expert knowledge of Google Maps APIs. Answer user queries by combining place search, geocoding, distance matrix, elevation, and directions. Provide concise, actionable answers, include travel mode assumptions, and cite uncertainties. When location is ambiguous, ask a brief clarifying question before proceeding.",
-      signature: 'userQuery:string "a question to be answered" -> answer:string "the answer to the question"',
-      provider: "anthropic",
-      providerKeyName: "ANTHROPIC_API_KEY",
+      name: "Context7DocsAgent",
+      description: "A specialized agent with access to Context7 Docs APIs that can: search for and get details about API docs",
+      signature: 'apiDocQuery:string "a question to be answered" -> apiDocAnswer:string "the answer to the question"',
+      provider: "google-gemini",
+      providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "claude-3-5-sonnet-latest",
+        model: "gemini-2.5-pro",
         temperature: 0,
-        maxTokens: 1000,
-        stream: true
+        stream: false
       },
       options: {
         debug: true
       },
       "mcpServers": {
-        "google-maps": {
+        "context7": {
           "command": "npx",
-          "args": [
-            "-y",
-            "@modelcontextprotocol/server-google-maps"
-          ],
-          "env": {
-            "GOOGLE_MAPS_API_KEY": process.env.GOOGLE_MAPS_API_KEY
-          }
+          "args": ["-y", "@upstash/context7-mcp", "--api-key", process.env.CONTEXT7_API_KEY]
         }
       },
     },
@@ -41,35 +33,19 @@ const config = {
       prompt: "You are a manager agent that orchestrates tools and sub-agents. Read the user's objective, optionally produce a short plan, then call the MapsAgent when geospatial knowledge is needed. Keep answers direct and avoid extraneous commentary.",
       signature:
         'question:string "a question to be answered" -> answer:string "the answer to the question"',
-      provider: "openai", 
-      providerKeyName: "OPENAI_API_KEY",
+      provider: "google-gemini", 
+      providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gpt-4o-mini",
+        model: "gemini-2.5-pro",
         maxTokens: 1000,
         temperature: 0,
-        stream: true
+        stream: false
       },
       options: {
         debug: true,
       },
-      agents: ["MapsAgent"]
-    },
-    {
-      name: "MathAgent",
-      description: "Solves math problems",
-      signature:
-        'mathProblem:string "a sentence describing a math problem to be solved using Python code" -> solution:string "the answer to the math problem"',
-      provider: "google-gemini",
-      providerKeyName: "GEMINI_API_KEY",
-      ai: {
-        model: "gemini-1.5-pro",
-        temperature: 0,
-        stream: true
-      },
-      options: {
-        debug: false,
-      },
-    },
+      agents: ["Context7DocsAgent"]
+    }
   ],
 };
 
@@ -81,9 +57,9 @@ await crew.addAllAgents();
 
 // Get agent instances
 const managerAgent = crew.agents?.get("ManagerAgent");
-const mapsAgent = crew.agents?.get("MapsAgent");
+const context7DocsAgent = crew.agents?.get("Context7DocsAgent");
 
-const userQuery: string = "Are there any cool bars around the Eiffel Tower in Paris within 5 min walking distance";
+const userQuery: string = "How do i create an agent in the @amitdeshmukh/ax-crew framework and configure it to use an MCP server? Give me a concrete example.";
 
 console.log(`\n\nQuestion: ${userQuery}`);
 
@@ -97,7 +73,7 @@ const main = async (): Promise<void> => {
     // Print metrics
     console.log("\nMetrics:\n+++++++++++++++++++++++++++++++++");
     console.log("Manager Agent Metrics:", JSON.stringify((managerAgent as any)?.getMetrics?.(), null, 2));
-    console.log("Maps Agent Metrics:", JSON.stringify((mapsAgent as any)?.getMetrics?.(), null, 2));
+    console.log("Context7 Docs Agent Metrics:", JSON.stringify((context7DocsAgent as any)?.getMetrics?.(), null, 2));
     console.log("Crew Metrics:", JSON.stringify((crew as any)?.getCrewMetrics?.(), null, 2));
 };
 

@@ -24,8 +24,8 @@
     "uuid": "^10.0.0"
   },
   "peerDependencies": {
-    "@ax-llm/ax": "14.0.16",
-    "@ax-llm/ax-tools": "14.0.16"
+    "@ax-llm/ax": "^14.0.36",
+    "@ax-llm/ax-tools": "^14.0.36"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

@@ -3,26 +3,13 @@ import type {
   AxSignature, 
   AxModelConfig,
   AxMCPStreamableHTTPTransportOptions,
-  AxProgramForwardOptions
+  AxProgramForwardOptions,
+  AxAIArgs
 } from '@ax-llm/ax';
 
-// Canonical provider slugs supported by ai() factory
-export type Provider =
-  // Canonical slugs per docs
-  | 'openai'
-  | 'anthropic'
-  | 'google-gemini'
-  | 'mistral'
-  | 'groq'
-  | 'cohere'
-  | 'together'
-  | 'deepseek'
-  | 'ollama'
-  | 'huggingface'
-  | 'openrouter'
-  | 'azure-openai'
-  | 'reka'
-  | 'x-grok'
+// Provider ids are derived from Ax's factory arg type so new providers added in Ax
+// are picked up at compile time without updating AxCrew.
+export type Provider = AxAIArgs<any>['name'];
 
 /**
  * A state instance that is shared between agents.
@@ -209,13 +196,13 @@ interface AgentConfig {
 }
 
 /**
- * The input type for the agent config. This can be a path to a JSON file or a JSON object.
+ * The configuration for a crew. Object-only to be browser-compatible.
  */
-type CrewConfigInput = string | { crew: AgentConfig[] };
+type CrewConfig = { crew: AgentConfig[] };
 
 export {
   type AgentConfig,
-  type CrewConfigInput,
+  type CrewConfig,
   type AggregatedMetrics,
   type StateInstance,
   type FunctionRegistryType,

@@ -9,7 +9,7 @@ const config = {
     {
       name: "XSearchAgent",
       description: "A specialized agent that can search X (Twitter) posts for the latest news and updates about specific topics, people, or events. It can find trending posts, recent tweets, and real-time information from X platform.",
-      signature: 'searchQuery:string "a search query" -> result:string "the response to the user query citing relevant sources including X posts and other web sources"',
+      signature: 'searchQuery:string "a search query" -> searchResults:string "the response to the user query citing relevant sources including X posts and other web sources"',
       provider: "grok",
       providerKeyName: "GROK_API_KEY",
       ai: {
@@ -55,8 +55,8 @@ const main = async (): Promise<void> => {
   if (response) {
     try {
       for await (const chunk of response) {
-        if (chunk.delta && typeof chunk.delta === 'object' && 'results' in chunk.delta) {
-          process.stdout.write(chunk.delta.results);
+        if (chunk.delta && typeof chunk.delta === 'object' && 'searchResults' in chunk.delta) {
+          process.stdout.write(chunk.delta.searchResults);
         }
       }
       console.log('\n');
