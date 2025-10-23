@@ -14,7 +14,7 @@ import type {
    StateInstance, 
    FunctionRegistryType, 
    UsageCost, 
-   AxCrewConfig, 
+   AxCrewConfig,
    MCPTransportConfig,
 } from "../types.js";
 
