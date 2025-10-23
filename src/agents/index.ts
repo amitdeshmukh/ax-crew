@@ -14,7 +14,7 @@ import type {
    StateInstance, 
    FunctionRegistryType, 
    UsageCost, 
-   CrewConfig, 
+   AxCrewConfig, 
    MCPTransportConfig,
 } from "../types.js";
 
@@ -279,7 +279,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
  *   to reset metrics/costs when needed
  */
 class AxCrew {
-  private crewConfig: CrewConfig;
+  private crewConfig: AxCrewConfig;
   functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
@@ -287,12 +287,12 @@ class AxCrew {
 
   /**
    * Creates an instance of AxCrew.
-   * @param {CrewConfig} crewConfig - JSON object with crew configuration.
+   * @param {AxCrewConfig} crewConfig - JSON object with crew configuration.
    * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
   constructor(
-    crewConfig: CrewConfig,
+    crewConfig: AxCrewConfig,
     functionsRegistry: FunctionRegistryType = {},
     crewId: string = uuidv4()
   ) {

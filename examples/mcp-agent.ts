@@ -1,4 +1,5 @@
-import { AxCrew, AxCrewConfig } from "../dist/index.js";
+import { AxCrew } from "../dist/index.js";
+import type { AxCrewConfig } from "../dist/types.js";
 
 import dotenv from "dotenv";
 dotenv.config();

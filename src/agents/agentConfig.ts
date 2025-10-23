@@ -6,7 +6,7 @@ import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
 // Resolve env by provided key name
 import type { 
   AgentConfig,
-  CrewConfig,
+  AxCrewConfig,
   FunctionRegistryType, 
   MCPTransportConfig, 
   MCPStdioTransportConfig, 
@@ -89,7 +89,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
  * @returns {Object} The parsed crew config.
  * @throws Will throw an error if reading/parsing fails.
  */
-const parseCrewConfig = (input: CrewConfig): { crew: AgentConfig[] } => {
+const parseCrewConfig = (input: AxCrewConfig): { crew: AgentConfig[] } => {
   if (!input || typeof input !== 'object' || !Array.isArray((input as any).crew)) {
     throw new Error('Invalid crew configuration: expected an object with a crew array');
   }
@@ -101,7 +101,7 @@ const parseCrewConfig = (input: CrewConfig): { crew: AgentConfig[] } => {
  * and creates an instance of the Agent with the appropriate settings.
  *
  * @param {string} agentName - The identifier for the AI agent to be initialized.
- * @param {CrewConfig} crewConfig - A JSON object with crew configuration.
+ * @param {AxCrewConfig} crewConfig - A JSON object with crew configuration.
  * @param {FunctionRegistryType} functions - The functions available to the agent.
  * @param {Object} state - The state object for the agent.
  * @returns {Object} An object containing the Agents AI instance, its name, description, signature, functions and subAgentList.
@@ -110,7 +110,7 @@ const parseCrewConfig = (input: CrewConfig): { crew: AgentConfig[] } => {
  */
 const parseAgentConfig = async (
   agentName: string, 
-  crewConfig: CrewConfig,
+  crewConfig: AxCrewConfig,
   functions: FunctionRegistryType,
   state: Record<string, any>
 ) => {

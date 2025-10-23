@@ -196,13 +196,49 @@ interface AgentConfig {
 }
 
 /**
- * The configuration for a crew. Object-only to be browser-compatible.
+ * The configuration object for an AxCrew instance.
+ * 
+ * @property {AgentConfig[]} crew - The agents that make up the crew.
+ * @example
+ * const config: AxCrewConfig = {
+ *   crew: [
+ *     {
+ *       name: "Agent1",
+ *       description: "Agent 1 description",
+ *       signature: "signature",
+ *       provider: "provider",
+ *       providerKeyName: "providerKeyName",
+ *       ai: {
+ *         model: "model",
+ *         temperature: 0,
+ *       },
+ *       options: {
+ *         debug: true,
+ *       },
+ *       functions: ["function1", "function2"],
+ *       agents: ["agent2"],
+ *     },
+ *     {
+ *       name: "Agent2",
+ *       description: "Agent 2 description",
+ *       signature: "signature",
+ *       provider: "provider",
+ *       providerKeyName: "providerKeyName",
+ *       ai: {
+ *         model: "model",
+ *         temperature: 0,
+ *       }
+ *   ]
+ * }
+ * const crew = new AxCrew(config);
  */
-type CrewConfig = { crew: AgentConfig[] };
+interface AxCrewConfig {
+  crew: AgentConfig[]
+}
 
 export {
   type AgentConfig,
-  type CrewConfig,
+  type AxCrewConfig,
   type AggregatedMetrics,
   type StateInstance,
   type FunctionRegistryType,
