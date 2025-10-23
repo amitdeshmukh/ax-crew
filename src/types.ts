@@ -197,7 +197,7 @@ interface AgentConfig {
 
 /**
  * The configuration object for an AxCrew instance.
- *
+ * 
  * @property {AgentConfig[]} crew - The agents that make up the crew.
  * @example
  * const config: AxCrewConfig = {
