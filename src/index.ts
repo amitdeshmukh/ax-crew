@@ -1,6 +1,6 @@
 import { AxCrew } from './agents/index.js';
 import { AxCrewFunctions } from './functions/index.js';
-import type { CrewConfig, AgentConfig } from './types.js';
+import type { AxCrewConfig, AgentConfig } from './types.js';
 
 import type { 
   UsageCost, 
@@ -22,19 +22,6 @@ export * from './metrics/index.js';
  * and to snapshot/reset metrics at agent or crew granularity.
  */
 export { MetricsRegistry } from './metrics/index.js';
-
-// Main AxCrew configuration interface
-/**
- * Top-level configuration for an AxCrew instance.
- *
- * Provide an array of agent definitions that specify provider, model, signature,
- * optional tools (functions), sub-agents, examples, MCP servers, and options.
- *
- * @property {AgentConfig[]} crew The agents that make up the crew.
- */
-interface AxCrewConfig {
-  crew: AgentConfig[];
-}
 
 /**
  * Create and manage a crew of Ax agents that share state and metrics.
@@ -58,7 +45,6 @@ export {
   type AggregatedMetrics,
   type AggregatedCosts,
   type AgentConfig,
-  type CrewConfig,
   type AxCrewConfig,
   type StateInstance,
   type UsageCost,

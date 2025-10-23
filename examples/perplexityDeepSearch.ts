@@ -1,10 +1,11 @@
 import { AxCrew } from "../dist/index.js";
+import type { AxCrewConfig } from "../dist/types.js";
 
 import dotenv from "dotenv";
 dotenv.config();
 
 // Define the crew configuration
-const config = {
+const config: AxCrewConfig = {
   crew: [
     {
       name: "DeepResearchAgent",

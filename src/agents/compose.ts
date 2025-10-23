@@ -1,6 +1,6 @@
 import { ai } from '@ax-llm/ax';
 import type { AxAI } from '@ax-llm/ax';
-import type { CrewConfig } from '../types.js';
+import type { AxCrewConfig } from '../types.js';
 
 type BuildProviderArgs = {
   provider: string;
@@ -25,7 +25,7 @@ export function instantiateProvider({
   return ai(args) as unknown as AxAI<any>;
 }
 
-export function buildProvidersFromConfig(cfg: CrewConfig): AxAI<any>[] {
+export function buildProvidersFromConfig(cfg: AxCrewConfig): AxAI<any>[] {
   const services: AxAI<any>[] = [];
   for (const agent of cfg.crew) {
     const apiKeyName = agent.providerKeyName;
@@ -48,7 +48,7 @@ export function buildProvidersFromConfig(cfg: CrewConfig): AxAI<any>[] {
 
 
 // Provider discovery helpers consolidated here (previously in src/providers.ts)
-export function discoverProvidersFromConfig(cfg: CrewConfig): string[] {
+export function discoverProvidersFromConfig(cfg: AxCrewConfig): string[] {
   const providers = new Set<string>();
   for (const agent of cfg.crew) {
     providers.add(String(agent.provider).toLowerCase());
@@ -56,7 +56,7 @@ export function discoverProvidersFromConfig(cfg: CrewConfig): string[] {
   return Array.from(providers);
 }
 
-export function listSelectableProviders(cfg: CrewConfig): string[] {
+export function listSelectableProviders(cfg: AxCrewConfig): string[] {
   return discoverProvidersFromConfig(cfg);
 }
 
