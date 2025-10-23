@@ -14,7 +14,7 @@ import type {
    StateInstance, 
    FunctionRegistryType, 
    UsageCost, 
-   CrewConfigInput, 
+   AxCrewConfig,
    MCPTransportConfig,
 } from "../types.js";
 
@@ -260,10 +260,26 @@ class StatefulAxAgent extends AxAgent<any, any> {
 }
 
 /**
- * Represents a crew of agents with shared state functionality.
+ * AxCrew orchestrates a set of Ax agents that share state,
+ * tools (functions), optional MCP servers, streaming, and a built-in metrics
+ * registry for tokens, requests, and estimated cost.
+ *
+ * Typical usage:
+ *  const crew = new AxCrew(config, AxCrewFunctions)
+ *  await crew.addAllAgents()
+ *  const planner = crew.agents?.get("Planner")
+ *  const res = await planner?.forward({ task: "Plan something" })
+ *
+ * Key behaviors:
+ * - Validates and instantiates agents from a config-first model
+ * - Shares a mutable state object across all agents in the crew
+ * - Supports sub-agents and a function registry per agent
+ * - Tracks per-agent and crew-level metrics via MetricsRegistry
+ * - Provides helpers to add agents (individually, a subset, or all) and
+ *   to reset metrics/costs when needed
  */
 class AxCrew {
-  private crewConfig: CrewConfigInput;
+  private crewConfig: AxCrewConfig;
   functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
@@ -271,12 +287,12 @@ class AxCrew {
 
   /**
    * Creates an instance of AxCrew.
-   * @param {CrewConfigInput} crewConfig - Either a path to the agent config file or a JSON object with crew configuration.
+   * @param {AxCrewConfig} crewConfig - JSON object with crew configuration.
    * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
   constructor(
-    crewConfig: CrewConfigInput,
+    crewConfig: AxCrewConfig,
     functionsRegistry: FunctionRegistryType = {},
     crewId: string = uuidv4()
   ) {
@@ -286,7 +302,7 @@ class AxCrew {
     }
 
     // Validate each agent in the crew
-    crewConfig.crew.forEach(agent => {
+    crewConfig.crew.forEach((agent: any) => {
       if (!agent.name || agent.name.trim() === '') {
         throw new Error('Agent name cannot be empty');
       }

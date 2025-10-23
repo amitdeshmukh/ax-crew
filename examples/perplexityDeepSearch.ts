@@ -1,19 +1,20 @@
 import { AxCrew } from "../dist/index.js";
+import type { AxCrewConfig } from "../dist/types.js";
 
 import dotenv from "dotenv";
 dotenv.config();
 
 // Define the crew configuration
-const config = {
+const config: AxCrewConfig = {
   crew: [
     {
       name: "DeepResearchAgent",
       description: "A specialized agent that performs deep research using perplexity",
-      signature: 'researchTopic:string "a topic of interest" -> result:string "The result of the research"',
-      provider: "openai",
-      providerKeyName: "OPENAI_API_KEY",
+      signature: 'researchTopic:string "a topic of interest" -> researchResult:string "The result of the research"',
+      provider: "google-gemini",
+      providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gpt-4.1",
+        model: "gemini-2.5-flash-lite",
         temperature: 0.1,
       },
       options: {

@@ -1,5 +1,7 @@
 import { AxCrew } from "../dist/index.js";
 import type { AxCrewConfig } from "../src/index.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Define the crew configuration
 const config: AxCrewConfig = {
@@ -12,11 +14,11 @@ const config: AxCrewConfig = {
       provider: "google-gemini",
       providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gemini-1.5-pro",
+        model: "gemini-2.5-flash-lite",
         temperature: 0,
       },
       options: {
-        debug: false,
+        debug: true,
         codeExecution: true,
       },
     },
@@ -25,10 +27,10 @@ const config: AxCrewConfig = {
       description: "Completes a user specified task",
       signature:
         'question:string "a question to be answered" -> answer:string "the answer to the question"',
-      provider: "openai", 
-      providerKeyName: "OPENAI_API_KEY",
+      provider: "google-gemini", 
+      providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gpt-4o-mini",
+        model: "gemini-2.5-flash-lite",
         maxTokens: 1000,
         temperature: 0,
       },

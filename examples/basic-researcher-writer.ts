@@ -2,6 +2,8 @@ import { AxCrew } from "../dist/index.js";
 import { AxCrewFunctions } from "../dist/functions/index.js";
 import type { AxCrewConfig } from "../dist/index.js";
 import type { Provider } from "../dist/types.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Example agent configuration
 const agentConfig: AxCrewConfig = {
@@ -26,10 +28,10 @@ const agentConfig: AxCrewConfig = {
       name: "writer",
       description: "A writing agent that creates content",
       signature: "topic:string -> article:string",
-      provider: "anthropic" as Provider,
-      providerKeyName: "ANTHROPIC_API_KEY",
+      provider: "google-gemini" as Provider,
+      providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "claude-3-haiku-20240307",
+        model: "gemini-2.5-flash-lite",
         maxTokens: 4000,
         stream: true
       },

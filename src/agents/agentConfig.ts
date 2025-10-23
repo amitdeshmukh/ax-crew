@@ -1,20 +1,12 @@
-import fs from 'fs';
-// Import Ax factory and MCP transports (as exported by current package)
+// Import Ax factory and MCP transports
 import { ai, AxMCPClient, AxMCPHTTPSSETransport, AxMCPStreambleHTTPTransport, AxDefaultCostTracker } from '@ax-llm/ax'
-import type {
-  AxAIAzureOpenAIArgs,
-  AxAIAnthropicArgs,
-  AxAIGoogleGeminiArgs,
-  AxAIOpenRouterArgs,
-  AxAIOllamaArgs
-} from '@ax-llm/ax';
 import type { AxFunction } from '@ax-llm/ax';
 // STDIO transport from tools package
 import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
-import { PROVIDER_API_KEYS } from '../config/index.js';
+// Resolve env by provided key name
 import type { 
   AgentConfig,
-  CrewConfigInput,
+  AxCrewConfig,
   FunctionRegistryType, 
   MCPTransportConfig, 
   MCPStdioTransportConfig, 
@@ -22,26 +14,6 @@ import type {
   MCPStreamableHTTPTransportConfig
 } from '../types.js';
 import type { Provider } from '../types.js';
-
-// Canonical provider slugs supported by ai() factory
-const PROVIDER_CANONICAL = new Set([
-  'openai',
-  'anthropic',
-  'google-gemini',
-  'mistral',
-  'groq',
-  'cohere',
-  'together',
-  'deepseek',
-  'ollama',
-  'huggingface',
-  'openrouter',
-  'azure-openai',
-  'reka',
-  'x-grok'
-]);
-
-// Provider type lives in src/types.ts
 
 // Type guard to check if config is stdio transport
 export function isStdioTransport(config: MCPTransportConfig): config is MCPStdioTransportConfig {
@@ -69,53 +41,7 @@ function isConstructor<T>(func: any): func is { new (...args: any[]): T } {
   return typeof func === 'function' && 'prototype' in func && 'toFunction' in func.prototype;
 }
 
-/**
- * Provides a user-friendly error message for JSON parsing errors
- */
-const getFormattedJSONError = (error: Error, fileContents: string): string => {
-  if (error instanceof SyntaxError) {
-    const match = error.message.match(/position (\d+)/);
-    const position = match ? parseInt(match[1]) : -1;
-    
-    if (position !== -1) {
-      const lines = fileContents.split('\n');
-      let currentPos = 0;
-      let errorLine = 0;
-      let errorColumn = 0;
-
-      // Find the line and column of the error
-      for (let i = 0; i < lines.length; i++) {
-        if (currentPos + lines[i].length >= position) {
-          errorLine = i + 1;
-          errorColumn = position - currentPos + 1;
-          break;
-        }
-        currentPos += lines[i].length + 1; // +1 for the newline character
-      }
-
-      const contextLines = lines.slice(Math.max(0, errorLine - 3), errorLine + 2)
-        .map((line, idx) => `${errorLine - 2 + idx}:  ${line}`).join('\n');
-
-      return `JSON Parse Error in your agent configuration:
-      
-Error near line ${errorLine}, column ${errorColumn}
-
-Context:
-${contextLines}
-
-Common issues to check:
-- Missing or extra commas between properties
-- Missing quotes around property names
-- Unmatched brackets or braces
-- Invalid JSON values
-- Trailing commas (not allowed in JSON)
-
-Original error: ${error.message}`;
-    }
-  }
-  
-  return `Error parsing agent configuration: ${error.message}`;
-};
+// Removed file/JSON parse helpers to keep browser-safe
 
 const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFunction[]> => {
   const mcpServers = agentConfigData.mcpServers;
@@ -158,32 +84,16 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
 };
 
 /**
- * Parses and returns the AxCrew config from either a JSON config file or a direct JSON object.
- * @param {CrewConfigInput} input - Either a path to the agent config json file or a JSON object with crew configuration.
+ * Returns the AxCrew config from a direct JSON object. Browser-safe.
+ * @param {CrewConfig} input - A JSON object with crew configuration.
  * @returns {Object} The parsed crew config.
  * @throws Will throw an error if reading/parsing fails.
  */
-const parseCrewConfig = (input: CrewConfigInput): { crew: AgentConfig[] } => {
-  try {
-    if (typeof input === 'string') {
-      // Handle file path input
-      const fileContents = fs.readFileSync(input, 'utf8');
-      const parsedConfig = JSON.parse(fileContents) as { crew: AgentConfig[] };
-      return parsedConfig;
-    } else {
-      // Handle direct JSON object input
-      return input;
-    }
-  } catch (e) {
-    if (e instanceof Error) {
-      if (typeof input === 'string') {
-        const formattedError = getFormattedJSONError(e, fs.readFileSync(input, 'utf8'));
-        throw new Error(formattedError);
-      }
-      throw new Error(`Error parsing agent configuration: ${e.message}`);
-    }
-    throw e;
+const parseCrewConfig = (input: AxCrewConfig): { crew: AgentConfig[] } => {
+  if (!input || typeof input !== 'object' || !Array.isArray((input as any).crew)) {
+    throw new Error('Invalid crew configuration: expected an object with a crew array');
   }
+  return input as { crew: AgentConfig[] };
 };
 
 /**
@@ -191,7 +101,7 @@ const parseCrewConfig = (input: CrewConfigInput): { crew: AgentConfig[] } => {
  * and creates an instance of the Agent with the appropriate settings.
  *
  * @param {string} agentName - The identifier for the AI agent to be initialized.
- * @param {CrewConfigInput} crewConfig - Either a file path to the JSON configuration or a JSON object with crew configuration.
+ * @param {AxCrewConfig} crewConfig - A JSON object with crew configuration.
  * @param {FunctionRegistryType} functions - The functions available to the agent.
  * @param {Object} state - The state object for the agent.
  * @returns {Object} An object containing the Agents AI instance, its name, description, signature, functions and subAgentList.
@@ -200,7 +110,7 @@ const parseCrewConfig = (input: CrewConfigInput): { crew: AgentConfig[] } => {
  */
 const parseAgentConfig = async (
   agentName: string, 
-  crewConfig: CrewConfigInput,
+  crewConfig: AxCrewConfig,
   functions: FunctionRegistryType,
   state: Record<string, any>
 ) => {
@@ -211,20 +121,17 @@ const parseAgentConfig = async (
       throw new Error(`AI agent with name ${agentName} is not configured`);
     }
 
-    // Enforce canonical provider slug
-    const lower = agentConfigData.provider.toLowerCase();
-    if (!PROVIDER_CANONICAL.has(lower)) {
-      throw new Error(`AI provider ${agentConfigData.provider} is not supported. Use one of: ${Array.from(PROVIDER_CANONICAL).join(', ')}`);
-    }
+    // Normalize provider slug to lowercase and validate via Ax factory
+    const lower = String(agentConfigData.provider).toLowerCase() as Provider;
     const provider = lower as Provider;
 
-    // If an API Key property is present, get the API key for the AI agent from the environment variables
+    // Resolve API key from user-supplied environment variable name
     let apiKey = '';
     if (agentConfigData.providerKeyName) {
-      apiKey = PROVIDER_API_KEYS[agentConfigData.providerKeyName] || '';
-
+      const keyName = agentConfigData.providerKeyName;
+      apiKey = resolveApiKey(keyName) || '';
       if (!apiKey) {
-        throw new Error(`API key for provider ${agentConfigData.provider} is not set in environment variables`);
+        throw new Error(`API key '${keyName}' for provider ${agentConfigData.provider} is not set in environment`);
       }
     } else {
       throw new Error(`Provider key name is missing in the agent configuration`);
@@ -253,37 +160,19 @@ const parseAgentConfig = async (
         throw new Error(`Invalid apiURL provided: ${agentConfigData.apiURL}`);
       }
     }
-    // Forward provider-specific arguments with type-safety for Azure OpenAI
+    // Forward provider-specific arguments as-is; let Ax validate/ignore as needed
     const providerArgs = (agentConfigData as any).providerArgs;
-    if (provider === 'azure-openai') {
-      type AzureArgs = Pick<AxAIAzureOpenAIArgs<string>, 'resourceName' | 'deploymentName' | 'version'>;
-      const az: Partial<AzureArgs> = providerArgs ?? {};
-      // If users supplied apiURL instead of resourceName, accept it (Ax supports full URL as resourceName)
-      if (!az.resourceName && agentConfigData.apiURL) {
-        az.resourceName = agentConfigData.apiURL as any;
-      }
-      Object.assign(aiArgs, az);
-    } else if (provider === 'anthropic') {
-      type AnthropicArgs = Pick<AxAIAnthropicArgs<string>, 'projectId' | 'region'>;
-      const an: Partial<AnthropicArgs> = providerArgs ?? {};
-      Object.assign(aiArgs, an);
-    } else if (provider === 'google-gemini') {
-      type GeminiArgs = Pick<AxAIGoogleGeminiArgs<string>, 'projectId' | 'region' | 'endpointId'>;
-      const g: Partial<GeminiArgs> = providerArgs ?? {};
-      Object.assign(aiArgs, g);
-    } else if (provider === 'openrouter') {
-      type OpenRouterArgs = Pick<AxAIOpenRouterArgs<string>, 'referer' | 'title'>;
-      const o: Partial<OpenRouterArgs> = providerArgs ?? {};
-      Object.assign(aiArgs, o);
-    } else if (provider === 'ollama') {
-      type OllamaArgs = Pick<AxAIOllamaArgs<string>, 'url'>;
-      const ol: Partial<OllamaArgs> = providerArgs ?? {};
-      Object.assign(aiArgs, ol);
-    } else if (providerArgs && typeof providerArgs === 'object') {
-      // Generic pass-through for other providers if needed in the future
+    if (providerArgs && typeof providerArgs === 'object') {
       Object.assign(aiArgs, providerArgs);
     }
-    const aiInstance = ai(aiArgs);
+    // Validate provider by attempting instantiation; Ax will throw on unknown providers
+    let aiInstance;
+    try {
+      aiInstance = ai(aiArgs);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`Unsupported provider '${provider}': ${msg}`);
+    }
 
     // If an mcpServers config is provided in the agent config, convert to functions
     const mcpFunctions = await initializeMCPServers(agentConfigData);
@@ -329,3 +218,20 @@ export {
   parseAgentConfig,
   parseCrewConfig
 };
+
+function resolveApiKey(varName: string): string | undefined {
+  try {
+    // Prefer Node env when available
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process?.env) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      return process.env[varName];
+    }
+    // Fallback: allow global exposure in browser builds (e.g., injected at runtime)
+    return (globalThis as any)?.[varName];
+  } catch {
+    return undefined;
+  }
+}

@@ -15,7 +15,7 @@ const config: AxCrewConfig = {
       provider: "google-gemini", 
       providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         maxTokens: 1000,
         temperature: 0,
       },
@@ -33,7 +33,7 @@ const config: AxCrewConfig = {
       provider: "google-gemini",
       providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gemini-1.5-pro",
+        model: "gemini-2.5-pro",
         temperature: 0,
       },
       options: {

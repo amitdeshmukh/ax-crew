@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@amitdeshmukh/ax-crew",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "Build and launch a crew of AI agents with shared state. Built with axllm.dev",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc --outDir dist",
     "release": "npm run build && npm publish --access public",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui"
@@ -24,8 +24,8 @@
     "uuid": "^10.0.0"
   },
   "peerDependencies": {
-    "@ax-llm/ax": "14.0.16",
-    "@ax-llm/ax-tools": "14.0.16"
+    "@ax-llm/ax": "^14.0.36",
+    "@ax-llm/ax-tools": "^14.0.36"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

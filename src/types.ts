@@ -3,26 +3,13 @@ import type {
   AxSignature, 
   AxModelConfig,
   AxMCPStreamableHTTPTransportOptions,
-  AxProgramForwardOptions
+  AxProgramForwardOptions,
+  AxAIArgs
 } from '@ax-llm/ax';
 
-// Canonical provider slugs supported by ai() factory
-export type Provider =
-  // Canonical slugs per docs
-  | 'openai'
-  | 'anthropic'
-  | 'google-gemini'
-  | 'mistral'
-  | 'groq'
-  | 'cohere'
-  | 'together'
-  | 'deepseek'
-  | 'ollama'
-  | 'huggingface'
-  | 'openrouter'
-  | 'azure-openai'
-  | 'reka'
-  | 'x-grok'
+// Provider ids are derived from Ax's factory arg type so new providers added in Ax
+// are picked up at compile time without updating AxCrew.
+export type Provider = AxAIArgs<any>['name'];
 
 /**
  * A state instance that is shared between agents.
@@ -209,13 +196,49 @@ interface AgentConfig {
 }
 
 /**
- * The input type for the agent config. This can be a path to a JSON file or a JSON object.
+ * The configuration object for an AxCrew instance.
+ * 
+ * @property {AgentConfig[]} crew - The agents that make up the crew.
+ * @example
+ * const config: AxCrewConfig = {
+ *   crew: [
+ *     {
+ *       name: "Agent1",
+ *       description: "Agent 1 description",
+ *       signature: "signature",
+ *       provider: "provider",
+ *       providerKeyName: "providerKeyName",
+ *       ai: {
+ *         model: "model",
+ *         temperature: 0,
+ *       },
+ *       options: {
+ *         debug: true,
+ *       },
+ *       functions: ["function1", "function2"],
+ *       agents: ["agent2"],
+ *     },
+ *     {
+ *       name: "Agent2",
+ *       description: "Agent 2 description",
+ *       signature: "signature",
+ *       provider: "provider",
+ *       providerKeyName: "providerKeyName",
+ *       ai: {
+ *         model: "model",
+ *         temperature: 0,
+ *       }
+ *   ]
+ * }
+ * const crew = new AxCrew(config);
  */
-type CrewConfigInput = string | { crew: AgentConfig[] };
+interface AxCrewConfig {
+  crew: AgentConfig[]
+}
 
 export {
   type AgentConfig,
-  type CrewConfigInput,
+  type AxCrewConfig,
   type AggregatedMetrics,
   type StateInstance,
   type FunctionRegistryType,
