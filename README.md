@@ -1,5 +1,7 @@
 ![image](axcrew.png)
 
+[![npm version](https://img.shields.io/npm/v/@amitdeshmukh/ax-crew.svg)](https://www.npmjs.com/package/@amitdeshmukh/ax-crew) [![npm downloads](https://img.shields.io/npm/dm/@amitdeshmukh/ax-crew.svg)](https://www.npmjs.com/package/@amitdeshmukh/ax-crew)
+
 ### AxCrew — build a crew of AI agents with shared state (powered by AxLLM)
 
 AxCrew lets you define a team of AI agents in config and run them together with shared state, tools, streaming, MCP, and built‑in metrics/cost tracking. Bring your own functions or use the provided registry.
