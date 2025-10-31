@@ -1,7 +1,7 @@
-import { AxCrew } from "../dist/index.js";
-import { AxCrewFunctions } from "../dist/functions/index.js";
-import type { AxCrewConfig } from "../dist/index.js";
-import type { Provider } from "../dist/types.js";
+import { AxCrew } from "../src/index.js";
+import { AxCrewFunctions } from "../src/functions/index.js";
+import type { AxCrewConfig } from "../src/index.js";
+import type { Provider } from "../src/types.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -40,7 +40,7 @@ function writerMetric({ prediction, example }: any): number {
 }
 
 async function main() {
-  const crew = new AxCrew(config, { ...AxCrewFunctions, writerMetric });
+  const crew = new AxCrew(config, { ...AxCrewFunctions, writerMetric: writerMetric as any });
 
   await crew.addAgentsToCrew(["writer"]);
   const writer = crew.agents?.get("writer");
