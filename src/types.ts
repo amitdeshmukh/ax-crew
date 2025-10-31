@@ -147,6 +147,48 @@ interface MCPStreamableHTTPTransportConfig {
  */
 type MCPTransportConfig = MCPStdioTransportConfig | MCPHTTPSSETransportConfig | MCPStreamableHTTPTransportConfig
 
+// ========================
+// ACE integration types
+// ========================
+
+interface ACETeacherConfig {
+  provider?: Provider;
+  providerKeyName?: string;
+  apiURL?: string;
+  ai?: AxModelConfig & { model: string };
+  providerArgs?: Record<string, unknown>;
+}
+
+interface ACEPersistenceConfig {
+  playbookPath?: string;
+  initialPlaybook?: Record<string, any>;
+  autoPersist?: boolean;
+  onPersist?: (pb: any) => Promise<void> | void;
+  onLoad?: () => Promise<any> | any;
+}
+
+interface ACEOptionsConfig {
+  maxEpochs?: number;
+  allowDynamicSections?: boolean;
+  tokenBudget?: number;
+  reflectorPrompt?: string;
+  curatorPrompt?: string;
+}
+
+interface ACEMetricConfig {
+  metricFnName?: string;
+  primaryOutputField?: string;
+}
+
+interface ACEConfig {
+  enabled?: boolean;
+  teacher?: ACETeacherConfig;
+  persistence?: ACEPersistenceConfig;
+  options?: ACEOptionsConfig;
+  metric?: ACEMetricConfig;
+  compileOnStart?: boolean;
+}
+
 /**
  * The configuration for an agent.
  * 
@@ -193,6 +235,8 @@ interface AgentConfig {
   agents?: string[];
   examples?: Array<Record<string, any>>;
   mcpServers?: Record<string, MCPTransportConfig>;
+  /** Optional AxACE configuration to enable optimization for this agent */
+  ace?: ACEConfig;
 }
 
 /**
@@ -249,5 +293,11 @@ export {
   type ModelUsage,
   type ModelInfo,
   type UsageCost,
-  type AggregatedCosts
+  type AggregatedCosts,
+  // ACE exports
+  type ACEConfig,
+  type ACEMetricConfig,
+  type ACEOptionsConfig,
+  type ACEPersistenceConfig,
+  type ACETeacherConfig
 }
