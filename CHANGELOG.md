@@ -1,5 +1,23 @@
 # Changelog
 
+## [7.0.0] - 2025-12-27
+
+### Breaking
+- Change to `AxCrewConfig` interface
+
+### Added
+- Optional OpenTelemetry telemetry support for distributed tracing and metrics collection
+- New `AxCrewOptions` interface with `telemetry` field accepting `tracer` and `meter` instances
+- Automatic instrumentation of agent execution, function calls, and token metrics when telemetry is enabled
+- Support for multiple OpenTelemetry exporters (console, Jaeger, Prometheus, etc.)
+- Complete telemetry example in `examples/telemetry-demo.ts` demonstrating setup with console and Jaeger exporters
+- Comprehensive telemetry documentation in README with setup instructions, best practices, and examples
+- Test coverage for telemetry functionality in `tests/telemetry.test.ts`
+
+### Changed
+- AxCrew constructor now accepts optional fourth parameter `options` of type `AxCrewOptions` for telemetry configuration
+- Enhanced agent initialization to pass telemetry context to underlying agents
+
 ## [6.0.0] - 2025-10-22
 
 ### Breaking
