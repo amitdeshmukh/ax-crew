@@ -291,14 +291,14 @@ class AxCrew {
    * Creates an instance of AxCrew.
    * @param {AxCrewConfig} crewConfig - JSON object with crew configuration.
    * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
-   * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    * @param {AxCrewOptions} [options] - Optional settings for the crew (e.g., telemetry).
+   * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
    */
   constructor(
     crewConfig: AxCrewConfig,
     functionsRegistry: FunctionRegistryType = {},
+    options?: AxCrewOptions,
     crewId: string = uuidv4(),
-    options?: AxCrewOptions
   ) {
     // Basic validation of crew configuration
     if (!crewConfig || typeof crewConfig !== 'object' || !('crew' in crewConfig)) {

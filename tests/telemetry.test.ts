@@ -58,8 +58,8 @@ describe('AxCrew Telemetry', () => {
         }
     };
 
-    // Initialize Crew with telemetry options
-    const crew = new AxCrew(crewConfig, {}, undefined, options as any);
+    // Initialize Crew with telemetry options (3rd argument now)
+    const crew = new AxCrew(crewConfig, {}, options as any);
 
     // Create the agent
     await crew.addAgent("telemetry-agent");

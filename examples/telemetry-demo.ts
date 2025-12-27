@@ -8,7 +8,6 @@ import "dotenv/config";
 // Import OpenTelemetry packages
 // Note: In a real project, you would need to install these dependencies:
 // npm install @opentelemetry/api @opentelemetry/sdk-trace-node @opentelemetry/sdk-metrics
-// Optional: npm install @opentelemetry/exporter-jaeger (for Jaeger UI visualization)
 import { metrics, trace } from "@opentelemetry/api";
 import {
   ConsoleSpanExporter,
@@ -21,36 +20,14 @@ import {
   PeriodicExportingMetricReader,
 } from "@opentelemetry/sdk-metrics";
 
-// Optional Jaeger import - will be used if available
-let JaegerExporter;
-try {
-  JaegerExporter = (await import('@opentelemetry/exporter-jaeger')).JaegerExporter;
-} catch (error) {
-  console.log('Jaeger exporter not available. Install with: npm install @opentelemetry/exporter-jaeger');
-  console.log('Traces will only be sent to console.');
-}
+// --- 1. Setup OpenTelemetry (Console Exporter for Demo) ---
 
-// --- 1. Setup OpenTelemetry (Console + Optional Jaeger) ---
-
-// Set up tracing to console and optionally Jaeger
-const spanProcessors = [new SimpleSpanProcessor(new ConsoleSpanExporter())];
-
-// Add Jaeger if available
-if (JaegerExporter) {
-  try {
-    spanProcessors.push(new SimpleSpanProcessor(new JaegerExporter({
-      endpoint: 'http://localhost:14268/api/traces',
-    })));
-    console.log('Jaeger tracing enabled. View traces at: http://localhost:16686');
-  } catch (error) {
-    console.log('Failed to initialize Jaeger exporter:', error.message);
-    console.log('Continuing with console tracing only.');
-  }
-}
-
-const tracerProvider = new NodeTracerProvider({
-  spanProcessors
-});
+// Set up basic tracing to print to console
+const tracerProvider = new NodeTracerProvider();
+// Cast to any to avoid potential type mismatches in different SDK versions in the example environment
+(tracerProvider as any).addSpanProcessor(
+  new SimpleSpanProcessor(new ConsoleSpanExporter())
+);
 tracerProvider.register(); // This registers it as the global tracer provider
 
 // Set up basic metrics to print to console
@@ -94,8 +71,8 @@ const crewConfig: AxCrewConfig = {
       provider: "google-gemini" as Provider,
       providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gemini-flash-latest",
-        temperature: 0.7,
+        model: "gemini-1.5-flash",
+        temperature: 0.9,
       },
       // No tools for this agent, just pure generation
     }
@@ -107,11 +84,10 @@ const crewConfig: AxCrewConfig = {
 async function main() {
   console.log("Starting AxCrew with Telemetry...");
 
-  // Initialize AxCrew with the telemetry options
+  // Initialize AxCrew with the telemetry options (3rd argument)
   const crew = new AxCrew(
     crewConfig,
     AxCrewFunctions,
-    undefined, // Use default crewId
     {
       telemetry: {
         tracer,
@@ -145,13 +121,7 @@ async function main() {
     console.log("Blog Post:\n", writerResult.blogPost);
 
     console.log("\n--- Done ---");
-    console.log("Check your console output above for OpenTelemetry traces and metrics.");
-    if (JaegerExporter) {
-      console.log("Check Jaeger UI at http://localhost:16686 for enhanced trace visualization.");
-    } else {
-      console.log("For enhanced visualization, install Jaeger: npm install @opentelemetry/exporter-jaeger");
-      console.log("Then run: docker run -d --name jaeger -p 16686:16686 -p 14268:14268 jaegertracing/all-in-one:latest");
-    }
+    console.log("Check your console output above for OpenTelemetry Spans and Metrics.");
 
     // Wait a moment for metrics to export before exiting
     await new Promise(resolve => setTimeout(resolve, 6000));
