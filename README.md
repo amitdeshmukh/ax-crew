@@ -717,6 +717,140 @@ Notes:
 - Legacy cost APIs (`getLastUsageCost`, `getAccumulatedCosts`, `getAggregatedCosts`) are superseded by metrics methods.
 - Estimated cost values are numbers rounded to 5 decimal places.
 
+### Telemetry Support (OpenTelemetry)
+
+AxCrew provides optional OpenTelemetry integration for comprehensive observability. You can pass custom tracer and meter instances to monitor agent operations, track performance, and analyze behavior across your crew.
+
+#### Features
+
+- **Distributed Tracing**: Track agent execution flows, function calls, and dependencies
+- **Metrics Collection**: Monitor token usage, costs, latency, and error rates
+- **Multiple Exporters**: Support for console, Jaeger, Prometheus, and other OpenTelemetry backends
+
+#### Setup
+
+Install OpenTelemetry dependencies:
+
+```bash
+npm install @opentelemetry/api @opentelemetry/sdk-trace-node @opentelemetry/sdk-metrics
+```
+
+Optional: Install exporters for enhanced visualization:
+
+```bash
+# For Jaeger tracing UI
+npm install @opentelemetry/exporter-jaeger
+
+# For Prometheus metrics
+npm install @opentelemetry/exporter-prometheus
+```
+
+#### Basic Configuration
+
+```typescript
+import { AxCrew } from '@amitdeshmukh/ax-crew';
+import { trace, metrics } from '@opentelemetry/api';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
+import { ConsoleSpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
+
+// Initialize OpenTelemetry
+const tracerProvider = new NodeTracerProvider({
+  spanProcessors: [new SimpleSpanProcessor(new ConsoleSpanExporter())]
+});
+tracerProvider.register();
+
+const meterProvider = new MeterProvider();
+metrics.setGlobalMeterProvider(meterProvider);
+
+// Get tracer and meter instances
+const tracer = trace.getTracer('my-app');
+const meter = metrics.getMeter('my-app');
+
+// Pass to AxCrew
+const crew = new AxCrew(
+  config,
+  AxCrewFunctions,
+  undefined,
+  {
+    telemetry: {
+      tracer,
+      meter
+    }
+  }
+);
+```
+
+#### What Gets Traced
+
+When telemetry is enabled, AxCrew automatically instruments:
+
+- **Agent Execution**: Each agent's `forward()` call creates a span with timing and metadata
+- **Function Calls**: Tool/function invocations are traced with parameters and results
+- **Provider Information**: Model name, provider, and configuration details
+- **Token Metrics**: Input/output tokens and estimated costs
+- **Errors**: Exceptions and failures are captured with full context
+
+#### Advanced Configuration with Jaeger
+
+For enhanced visualization, you can export traces to Jaeger:
+
+```typescript
+import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
+
+const tracerProvider = new NodeTracerProvider({
+  spanProcessors: [
+    new SimpleSpanProcessor(new ConsoleSpanExporter()),
+    new SimpleSpanProcessor(new JaegerExporter({
+      endpoint: 'http://localhost:14268/api/traces'
+    }))
+  ]
+});
+tracerProvider.register();
+
+// ... rest of setup
+```
+
+Start Jaeger with Docker:
+
+```bash
+docker run -d --name jaeger \
+  -p 16686:16686 \
+  -p 14268:14268 \
+  jaegertracing/all-in-one:latest
+```
+
+View traces at: http://localhost:16686
+
+#### Complete Example
+
+See [examples/telemetry-demo.ts](examples/telemetry-demo.ts) for a full working example that demonstrates:
+
+- Setting up OpenTelemetry with console and Jaeger exporters
+- Configuring multiple agents with different providers
+- Running a multi-step workflow with telemetry tracking
+- Viewing traces and metrics in the console and Jaeger UI
+
+Run the example:
+
+```bash
+# With console output only
+npm run dev examples/telemetry-demo.ts
+
+# With Jaeger (start Jaeger first)
+docker run -d --name jaeger -p 16686:16686 -p 14268:14268 jaegertracing/all-in-one:latest
+npm run dev examples/telemetry-demo.ts
+# Open http://localhost:16686 to view traces
+```
+
+#### Best Practices
+
+1. **Production Setup**: Use appropriate exporters for your infrastructure (Jaeger, Zipkin, Cloud providers)
+2. **Sampling**: Configure sampling strategies to control trace volume in production
+3. **Context Propagation**: OpenTelemetry automatically propagates trace context across agent calls
+4. **Custom Attributes**: Extend traces with custom attributes specific to your use case
+5. **Performance**: Telemetry adds minimal overhead when properly configured
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version updates.
