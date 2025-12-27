@@ -7,6 +7,7 @@ import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
 import type { 
   AgentConfig,
   AxCrewConfig,
+  AxCrewOptions,
   FunctionRegistryType, 
   MCPTransportConfig, 
   MCPStdioTransportConfig, 
@@ -112,7 +113,8 @@ const parseAgentConfig = async (
   agentName: string, 
   crewConfig: AxCrewConfig,
   functions: FunctionRegistryType,
-  state: Record<string, any>
+  state: Record<string, any>,
+  options?: AxCrewOptions
 ) => {
   try {
     // Retrieve the parameters for the specified AI agent from config
@@ -149,7 +151,10 @@ const parseAgentConfig = async (
         debug: agentConfigData.debug || false,
         ...agentConfigData.options,
         // Attach default cost tracker so usage/costs are recorded by provider layer
-        trackers: [costTracker]
+        trackers: [costTracker],
+        // Inject telemetry if provided
+        tracer: options?.telemetry?.tracer,
+        meter: options?.telemetry?.meter
       }
     };
     if (agentConfigData.apiURL) {

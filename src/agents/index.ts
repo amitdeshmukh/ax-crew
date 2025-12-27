@@ -15,6 +15,7 @@ import type {
    FunctionRegistryType, 
    UsageCost, 
    AxCrewConfig,
+   AxCrewOptions,
    MCPTransportConfig,
 } from "../types.js";
 
@@ -280,6 +281,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
  */
 class AxCrew {
   private crewConfig: AxCrewConfig;
+  private options?: AxCrewOptions;
   functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
@@ -290,11 +292,13 @@ class AxCrew {
    * @param {AxCrewConfig} crewConfig - JSON object with crew configuration.
    * @param {FunctionRegistryType} [functionsRegistry={}] - The registry of functions to use in the crew.
    * @param {string} [crewId=uuidv4()] - The unique identifier for the crew.
+   * @param {AxCrewOptions} [options] - Optional settings for the crew (e.g., telemetry).
    */
   constructor(
     crewConfig: AxCrewConfig,
     functionsRegistry: FunctionRegistryType = {},
-    crewId: string = uuidv4()
+    crewId: string = uuidv4(),
+    options?: AxCrewOptions
   ) {
     // Basic validation of crew configuration
     if (!crewConfig || typeof crewConfig !== 'object' || !('crew' in crewConfig)) {
@@ -311,6 +315,7 @@ class AxCrew {
     this.crewConfig = crewConfig;
     this.functionsRegistry = functionsRegistry;
     this.crewId = crewId;
+    this.options = options;
     this.agents = new Map<string, StatefulAxAgent>();
     this.state = createState(crewId);
     // Make crewId discoverable to metrics
@@ -329,7 +334,8 @@ class AxCrew {
         agentName,
         this.crewConfig,
         this.functionsRegistry,
-        this.state
+        this.state,
+        this.options
       );
 
       // Destructure with type assertion

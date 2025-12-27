@@ -236,9 +236,24 @@ interface AxCrewConfig {
   crew: AgentConfig[]
 }
 
+/**
+ * Options for the AxCrew instance, specifically allowing optional OpenTelemetry injection.
+ *
+ * @property {Object} [telemetry] - Telemetry configuration.
+ * @property {any} [telemetry.tracer] - OpenTelemetry Tracer instance.
+ * @property {any} [telemetry.meter] - OpenTelemetry Meter instance.
+ */
+interface AxCrewOptions {
+  telemetry?: {
+    tracer?: any;
+    meter?: any;
+  }
+}
+
 export {
   type AgentConfig,
   type AxCrewConfig,
+  type AxCrewOptions,
   type AggregatedMetrics,
   type StateInstance,
   type FunctionRegistryType,
