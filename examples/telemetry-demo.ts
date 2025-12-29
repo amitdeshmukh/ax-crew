@@ -111,7 +111,6 @@ async function main() {
   const crew = new AxCrew(
     crewConfig,
     AxCrewFunctions,
-    undefined, // Use default crewId
     {
       telemetry: {
         tracer,
