@@ -17,6 +17,7 @@ import type {
    AxCrewConfig,
    AxCrewOptions,
    MCPTransportConfig,
+   ACEConfig,
 } from "../types.js";
 
 import { createState }   from "../state/index.js";
@@ -48,6 +49,11 @@ class StatefulAxAgent extends AxAgent<any, any> {
   private agentName: string;
   private costTracker?: any;
   private lastRecordedCostUSD: number = 0;
+  // ACE-related optional state
+  private aceConfig?: ACEConfig;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private aceOptimizer?: any;
+  private acePlaybook?: any;
   private isAxAIService(obj: any): obj is AxAI {
     return !!obj && typeof obj.getName === 'function' && typeof obj.chat === 'function';
   }
@@ -258,6 +264,45 @@ class StatefulAxAgent extends AxAgent<any, any> {
     MetricsRegistry.reset({ crewId, agent: this.agentName } as any);
   }
 
+  // =============
+  // ACE API
+  // =============
+  async initACE(ace?: ACEConfig): Promise<void> {
+    this.aceConfig = ace;
+    if (!ace?.enabled) return;
+    try {
+      const { buildACEOptimizer, loadInitialPlaybook } = await import('./ace.js');
+      this.aceOptimizer = buildACEOptimizer(this as any, ace);
+      const initial = await loadInitialPlaybook(ace.persistence);
+      if (initial) this.applyPlaybook(initial);
+    } catch {}
+  }
+
+  async optimizeOffline(params?: { metric?: any; examples?: any[] }): Promise<void> {
+    if (!this.aceConfig?.enabled || !this.aceOptimizer) return;
+    try {
+      const { runOfflineCompile, resolveMetric } = await import('./ace.js');
+      const registry = (this as any).__functionsRegistry as FunctionRegistryType | undefined;
+      const metric = params?.metric || resolveMetric(this.aceConfig.metric, registry || {} as any);
+      const ex = params?.examples || [];
+      await runOfflineCompile({ agent: this as any, optimizer: this.aceOptimizer, metric, examples: ex, persistence: this.aceConfig.persistence });
+    } catch {}
+  }
+
+  async applyOnlineUpdate(params: { example: any; prediction: any; feedback?: string }): Promise<void> {
+    if (!this.aceConfig?.enabled || !this.aceOptimizer) return;
+    try {
+      const { runOnlineUpdate } = await import('./ace.js');
+      const tokenBudget = this.aceConfig.options?.tokenBudget;
+      await runOnlineUpdate({ agent: this as any, optimizer: this.aceOptimizer, example: params.example, prediction: params.prediction, feedback: params.feedback, persistence: this.aceConfig.persistence, tokenBudget });
+    } catch {}
+  }
+
+  getPlaybook(): any | undefined { return this.acePlaybook; }
+  applyPlaybook(pb: any): void {
+    this.acePlaybook = pb;
+    try { (this.aceOptimizer as any)?.applyPlaybook?.(pb, this); } catch {}
+  }
 }
 
 /**
@@ -390,6 +435,21 @@ class AxCrew {
         this.state
       );
       (agent as any).costTracker = tracker;
+      (agent as any).__functionsRegistry = this.functionsRegistry;
+
+      // Initialize ACE if configured
+      try {
+        const crewAgent = parseCrewConfig(this.crewConfig).crew.find(a => a.name === name) as any;
+        const ace: ACEConfig | undefined = crewAgent?.ace;
+        if (ace?.enabled) {
+          await (agent as any).initACE?.(ace);
+          if (ace.compileOnStart) {
+            const { resolveMetric } = await import('./ace.js');
+            const metric = resolveMetric(ace.metric, this.functionsRegistry);
+            await (agent as any).optimizeOffline?.({ metric, examples });
+          }
+        }
+      } catch {}
 
       return agent;
     } catch (error) {
