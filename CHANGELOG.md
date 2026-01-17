@@ -1,5 +1,22 @@
 # Changelog
 
+## [8.0.0] - 2025-01-17
+
+### Added
+- **ACE (Agentic Context Engineering) Support** - Per-agent learning from human feedback
+  - Agents can learn from real-time feedback and update their behavior
+  - Playbook persistence to JSON files or custom storage via callbacks
+  - Teacher/Student model architecture for distilling feedback into rules
+  - Feedback routing across agent dependency chains (`applyTaskFeedback`)
+  - New `ACEConfig` interface with `teacher`, `persistence`, `options`, and `metric` fields
+- New type exports: `ACEConfig`, `ACETeacherConfig`, `ACEPersistenceConfig`, `ACEOptionsConfig`, `ACEMetricConfig`
+- Export `AxCrewOptions` type for consumer type safety
+- ACE examples: `ace-customer-support.ts` and `ace-flight-finder.ts`
+- ACE documentation section in README with configuration options and usage examples
+
+### Changed
+- ACE configuration is presence-based (no redundant `enabled` boolean needed)
+
 ## [7.0.0] - 2025-12-27
 
 ### Breaking
