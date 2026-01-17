@@ -181,7 +181,6 @@ interface ACEMetricConfig {
 }
 
 interface ACEConfig {
-  enabled?: boolean;
   teacher?: ACETeacherConfig;
   persistence?: ACEPersistenceConfig;
   options?: ACEOptionsConfig;
@@ -288,6 +287,8 @@ interface AxCrewConfig {
  * @property {any} [telemetry.meter] - OpenTelemetry Meter instance.
  */
 interface AxCrewOptions {
+  /** Enable debug logging for ACE and other internal operations */
+  debug?: boolean;
   telemetry?: {
     tracer?: any;
     meter?: any;

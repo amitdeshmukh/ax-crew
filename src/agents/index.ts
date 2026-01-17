@@ -49,11 +49,13 @@ class StatefulAxAgent extends AxAgent<any, any> {
   private agentName: string;
   private costTracker?: any;
   private lastRecordedCostUSD: number = 0;
+  private debugEnabled: boolean = false;
   // ACE-related optional state
   private aceConfig?: ACEConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private aceOptimizer?: any;
   private acePlaybook?: any;
+  private aceBaseInstruction?: string; // Original description before playbook injection
   private isAxAIService(obj: any): obj is AxAI {
     return !!obj && typeof obj.getName === 'function' && typeof obj.chat === 'function';
   }
@@ -72,10 +74,11 @@ class StatefulAxAgent extends AxAgent<any, any> {
       functions?: (AxFunction | (() => AxFunction))[] | undefined;
       examples?: Array<Record<string, any>> | undefined;
       mcpServers?: Record<string, MCPTransportConfig> | undefined;
+      debug?: boolean;
     }>,
     state: StateInstance
   ) {
-    const { examples, ...restOptions } = options;
+    const { examples, debug, ...restOptions } = options;
     const formattedOptions = {
       ...restOptions,
       functions: restOptions.functions?.map((fn) =>
@@ -86,6 +89,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     this.state = state;
     this.axai = ai;
     this.agentName = options.name;
+    this.debugEnabled = debug ?? false;
 
     // Set examples if provided
     if (examples && examples.length > 0) {
@@ -104,13 +108,40 @@ class StatefulAxAgent extends AxAgent<any, any> {
     third?: Readonly<AxProgramForwardOptions<any>>
   ): Promise<Record<string, any>> {
     let result;
-    
+
     const start = performance.now();
     const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
     const labels = { crewId, agent: this.agentName } as any;
+    const input = this.isAxAIService(first) ? second : first;
+    const taskId = `task_${crewId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Track costs regardless of whether it's a direct or sub-agent call
-    // This ensures we capture multiple legitimate calls to the same agent
+    // Track execution context in crew for ACE feedback routing
+    const crewInstance = (this.state as any)?.crew as AxCrew;
+    if (crewInstance) {
+      if (this.isAxAIService(first)) {
+        // For sub-agent calls, track under parent task ID
+        const parentTaskId = (this.state as any)?.currentTaskId;
+        if (parentTaskId) {
+          crewInstance.trackAgentExecution(parentTaskId, this.agentName, input);
+        }
+      } else {
+        // Root-level call - start new execution tracking
+        crewInstance.trackAgentExecution(taskId, this.agentName, input);
+        (this.state as any).currentTaskId = taskId;
+      }
+    }
+
+    // Before forward: compose instruction with current playbook (mirrors AxACE.compile behavior)
+    // This ensures the agent uses the latest playbook context for this call
+    if (this.debugEnabled) {
+      console.log(`[ACE Debug] forward() called, aceConfig=${!!this.aceConfig}`);
+    }
+    if (this.aceConfig) {
+      await this.composeInstructionWithPlaybook();
+    }
+
+    // Execute the forward call
+    // Note: OpenTelemetry spans are automatically created by AxAI (configured via AxCrewOptions.telemetry)
     if (this.isAxAIService(first)) {
       // Sub-agent case (called with AI service)
       result = await super.forward(this.axai, second as Record<string, any>, third);
@@ -156,6 +187,24 @@ class StatefulAxAgent extends AxAgent<any, any> {
           MetricsRegistry.recordEstimatedCost(labels, totalUSD);
         }
       } catch {}
+    }
+
+    // Record result in crew execution history for ACE feedback routing
+    if (crewInstance) {
+      if (this.isAxAIService(first)) {
+        // For sub-agent calls, record under parent task ID
+        const parentTaskId = (this.state as any)?.currentTaskId;
+        if (parentTaskId) {
+          crewInstance.recordAgentResult(parentTaskId, this.agentName, result);
+        }
+      } else {
+        // Root-level result - include taskId for feedback routing
+        crewInstance.recordAgentResult(taskId, this.agentName, result);
+        // Clean up current task ID
+        delete (this.state as any).currentTaskId;
+        // Attach taskId to result for feedback routing convenience
+        result._taskId = taskId;
+      }
     }
 
     return result;
@@ -265,43 +314,215 @@ class StatefulAxAgent extends AxAgent<any, any> {
   }
 
   // =============
-  // ACE API
+  // ACE API - Agentic Context Engineering for online learning
+  // Reference: https://axllm.dev/ace/
   // =============
+  
+  /**
+   * Initialize ACE (Agentic Context Engineering) for this agent.
+   * Builds the optimizer and loads any initial playbook from persistence.
+   * Sets up the optimizer for online-only mode if compileOnStart is false.
+   */
   async initACE(ace?: ACEConfig): Promise<void> {
     this.aceConfig = ace;
-    if (!ace?.enabled) return;
+    if (!ace) return;
     try {
-      const { buildACEOptimizer, loadInitialPlaybook } = await import('./ace.js');
-      this.aceOptimizer = buildACEOptimizer(this as any, ace);
+      // Capture base instruction BEFORE any playbook injection (mirrors AxACE.extractProgramInstruction)
+      this.aceBaseInstruction = this.getSignature().getDescription() || '';
+      
+      const { buildACEOptimizer, loadInitialPlaybook, createEmptyPlaybook } = await import('./ace.js');
+      // Build optimizer with agent's AI as student
+      this.aceOptimizer = buildACEOptimizer(this.axai, ace);
+      
+      // For online-only mode (no offline compile), we need to set the program
+      // reference so applyOnlineUpdate can work. AxACE requires compile() to
+      // set the program, but we can set it directly for online-only use.
+      if (!ace.compileOnStart) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this.aceOptimizer as any).program = this;
+      }
+      
+      // Load initial playbook or create empty one
       const initial = await loadInitialPlaybook(ace.persistence);
-      if (initial) this.applyPlaybook(initial);
-    } catch {}
+      this.applyPlaybook(initial ?? createEmptyPlaybook());
+      
+      if (this.debugEnabled) {
+        console.log(`[ACE Debug] Initialized for ${this.agentName}, base instruction: ${this.aceBaseInstruction?.slice(0, 50)}...`);
+      }
+    } catch (error) {
+      console.warn(`Failed to initialize ACE for agent ${this.agentName}:`, error);
+    }
   }
 
+  /**
+   * Run offline ACE compilation with examples and metric.
+   * Compiles the playbook based on training examples.
+   */
   async optimizeOffline(params?: { metric?: any; examples?: any[] }): Promise<void> {
-    if (!this.aceConfig?.enabled || !this.aceOptimizer) return;
+    if (!this.aceConfig || !this.aceOptimizer) return;
     try {
       const { runOfflineCompile, resolveMetric } = await import('./ace.js');
       const registry = (this as any).__functionsRegistry as FunctionRegistryType | undefined;
       const metric = params?.metric || resolveMetric(this.aceConfig.metric, registry || {} as any);
-      const ex = params?.examples || [];
-      await runOfflineCompile({ agent: this as any, optimizer: this.aceOptimizer, metric, examples: ex, persistence: this.aceConfig.persistence });
-    } catch {}
+      const examples = params?.examples || [];
+      
+      if (!metric || examples.length === 0) {
+        console.warn(`ACE offline compile skipped for ${this.agentName}: missing metric or examples`);
+        return;
+      }
+      
+      const result = await runOfflineCompile({ 
+        program: this, 
+        optimizer: this.aceOptimizer, 
+        metric, 
+        examples, 
+        persistence: this.aceConfig.persistence 
+      });
+      
+      // Apply optimized playbook if compilation succeeded
+      if (result?.artifact?.playbook) {
+        await this.applyPlaybook(result.artifact.playbook);
+      }
+    } catch (error) {
+      console.warn(`ACE offline compile failed for ${this.agentName}:`, error);
+    }
   }
 
+  /**
+   * Apply online ACE update based on user feedback.
+   * 
+   * For preference-based feedback (e.g., "only show flights between 9am-12pm"),
+   * we use our own feedback analyzer that preserves specificity.
+   * 
+   * Note: AxACE's built-in curator is designed for error correction (severity mismatches)
+   * and tends to over-abstract preference feedback into generic guidelines.
+   * We bypass it and directly use our feedback analyzer for better results.
+   */
   async applyOnlineUpdate(params: { example: any; prediction: any; feedback?: string }): Promise<void> {
-    if (!this.aceConfig?.enabled || !this.aceOptimizer) return;
+    if (!this.aceConfig) return;
+    if (!params.feedback?.trim()) return; // Nothing to do without feedback
+    
     try {
-      const { runOnlineUpdate } = await import('./ace.js');
-      const tokenBudget = this.aceConfig.options?.tokenBudget;
-      await runOnlineUpdate({ agent: this as any, optimizer: this.aceOptimizer, example: params.example, prediction: params.prediction, feedback: params.feedback, persistence: this.aceConfig.persistence, tokenBudget });
-    } catch {}
+      const { persistPlaybook, addFeedbackToPlaybook, createEmptyPlaybook } = await import('./ace.js');
+      
+      // Get or create playbook
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let playbook = this.acePlaybook ?? (this.aceOptimizer as any)?.playbook;
+      if (!playbook) {
+        playbook = createEmptyPlaybook();
+      }
+      
+      if (this.debugEnabled) {
+        console.log(`[ACE Debug] Adding feedback to playbook: "${params.feedback}"`);
+      }
+      
+      // Use teacher AI (or student AI as fallback) for smart categorization
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const teacherAI = (this.aceOptimizer as any)?.teacherAI;
+      const aiForAnalysis = teacherAI ?? this.axai;
+      
+      // Directly add feedback to playbook using our analyzer (preserves specificity)
+      await addFeedbackToPlaybook(playbook, params.feedback, aiForAnalysis, this.debugEnabled);
+      
+      // Store updated playbook (injection happens in next forward() call)
+      this.applyPlaybook(playbook);
+      
+      // Sync with optimizer if available
+      if (this.aceOptimizer) {
+        (this.aceOptimizer as any).playbook = playbook;
+      }
+      
+      // Persist if auto-persist enabled
+      if (this.aceConfig.persistence?.autoPersist) {
+        await persistPlaybook(playbook, this.aceConfig.persistence);
+      }
+      
+      if (this.debugEnabled) {
+        console.log(`[ACE Debug] Playbook updated, sections: ${Object.keys(playbook.sections || {}).join(', ')}`);
+      }
+    } catch (error) {
+      console.warn(`ACE online update failed for ${this.agentName}:`, error);
+    }
   }
 
-  getPlaybook(): any | undefined { return this.acePlaybook; }
+  /**
+   * Get the current ACE playbook for this agent.
+   */
+  getPlaybook(): any | undefined { 
+    return this.acePlaybook; 
+  }
+  
+  /**
+   * Apply an ACE playbook to this agent.
+   * Stores the playbook for use in next forward() call.
+   * Note: Playbook is composed into instruction BEFORE each forward(), mirroring AxACE.compile behavior.
+   */
   applyPlaybook(pb: any): void {
     this.acePlaybook = pb;
-    try { (this.aceOptimizer as any)?.applyPlaybook?.(pb, this); } catch {}
+    
+    // Also update optimizer's internal playbook if possible
+    try { 
+      (this.aceOptimizer as any).playbook = pb;
+    } catch {
+      // Ignore - optimizer may not be initialized yet
+    }
+  }
+  
+  /**
+   * Compose instruction with current playbook and set on agent.
+   * This mirrors what AxACE does internally before each forward() during compile().
+   * Should be called BEFORE forward() to ensure playbook is in the prompt.
+   */
+  private async composeInstructionWithPlaybook(): Promise<void> {
+    const playbook = this.acePlaybook ?? (this.aceOptimizer as any)?.playbook;
+    
+    if (this.debugEnabled) {
+      console.log(`[ACE Debug] composeInstructionWithPlaybook called`);
+      console.log(`[ACE Debug] playbook exists: ${!!playbook}, sections: ${playbook ? Object.keys(playbook.sections || {}).length : 0}`);
+      console.log(`[ACE Debug] baseInstruction: "${this.aceBaseInstruction?.slice(0, 50)}..."`);
+    }
+    
+    if (!playbook) return;
+    
+    try {
+      const { renderPlaybook } = await import('./ace.js');
+      const rendered = renderPlaybook(playbook);
+      
+      if (this.debugEnabled) {
+        console.log(`[ACE Debug] rendered playbook (${rendered.length} chars): ${rendered.slice(0, 100)}...`);
+      }
+      
+      if (!rendered) return;
+      
+      // Compose: base instruction + playbook (just like AxACE.composeInstruction)
+      const baseInstruction = this.aceBaseInstruction || '';
+      const combinedInstruction = [baseInstruction.trim(), '', rendered]
+        .filter((part) => part.trim().length > 0)
+        .join('\n\n');
+      
+      if (this.debugEnabled) {
+        console.log(`[ACE Debug] combinedInstruction (${combinedInstruction.length} chars)`);
+      }
+      
+      if (combinedInstruction.length >= 20) {
+        // Call setDescription on the internal program (like AxACE does)
+        // AxAgent.setDescription() only updates the signature, but we need
+        // to update the program's description which is used for the system prompt
+        const program = (this as any).program;
+        if (program?.setDescription) {
+          program.setDescription(combinedInstruction);
+        }
+        // Also update via AxAgent's setDescription for consistency
+        this.setDescription(combinedInstruction);
+        
+        if (this.debugEnabled) {
+          console.log(`[ACE Debug] setDescription called successfully`);
+          console.log(`[ACE Debug] Verifying - signature desc length: ${this.getSignature().getDescription()?.length}`);
+        }
+      }
+    } catch (error) {
+      console.warn('[ACE Debug] Failed to compose instruction:', error);
+    }
   }
 }
 
@@ -331,6 +552,16 @@ class AxCrew {
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
   state: StateInstance;
+  // Execution history for ACE feedback routing
+  private executionHistory: Map<string, {
+    taskId: string;
+    rootAgent: string;
+    involvedAgents: Set<string>;
+    taskInput: any;
+    agentResults: Map<string, any>;
+    startTime: number;
+    endTime?: number;
+  }> = new Map();
 
   /**
    * Creates an instance of AxCrew.
@@ -421,6 +652,8 @@ class AxCrew {
       }
 
       // Create an instance of StatefulAxAgent
+      // Set crew reference in state for execution tracking (ACE feedback routing)
+      const agentState = { ...this.state, crew: this };
       const agent = new StatefulAxAgent(
         ai,
         {
@@ -431,8 +664,9 @@ class AxCrew {
           functions: uniqueFunctions,
           agents: uniqueSubAgents,
           examples,
+          debug: (agentConfig as any).debug,
         },
-        this.state
+        agentState as StateInstance
       );
       (agent as any).costTracker = tracker;
       (agent as any).__functionsRegistry = this.functionsRegistry;
@@ -441,7 +675,7 @@ class AxCrew {
       try {
         const crewAgent = parseCrewConfig(this.crewConfig).crew.find(a => a.name === name) as any;
         const ace: ACEConfig | undefined = crewAgent?.ace;
-        if (ace?.enabled) {
+        if (ace) {
           await (agent as any).initACE?.(ace);
           if (ace.compileOnStart) {
             const { resolveMetric } = await import('./ace.js');
@@ -582,10 +816,118 @@ class AxCrew {
   }
 
   /**
+   * Track agent execution for ACE feedback routing
+   */
+  trackAgentExecution(taskId: string, agentName: string, input: any): void {
+    if (!this.executionHistory.has(taskId)) {
+      this.executionHistory.set(taskId, {
+        taskId,
+        rootAgent: agentName,
+        involvedAgents: new Set([agentName]),
+        taskInput: input,
+        agentResults: new Map(),
+        startTime: Date.now()
+      });
+    } else {
+      // Add to involved agents if not already present
+      const context = this.executionHistory.get(taskId)!;
+      context.involvedAgents.add(agentName);
+    }
+  }
+
+  /**
+   * Record agent result for ACE feedback routing
+   */
+  recordAgentResult(taskId: string, agentName: string, result: any): void {
+    const context = this.executionHistory.get(taskId);
+    if (context) {
+      context.agentResults.set(agentName, result);
+      context.endTime = Date.now();
+    }
+  }
+
+  /**
+   * Get agent involvement for a task (used for ACE feedback routing)
+   */
+  getTaskAgentInvolvement(taskId: string): {
+    rootAgent: string;
+    involvedAgents: string[];
+    taskInput: any;
+    agentResults: Map<string, any>;
+    duration?: number;
+  } | null {
+    const context = this.executionHistory.get(taskId);
+    if (!context) return null;
+
+    return {
+      rootAgent: context.rootAgent,
+      involvedAgents: Array.from(context.involvedAgents),
+      taskInput: context.taskInput,
+      agentResults: context.agentResults,
+      duration: context.endTime ? context.endTime - context.startTime : undefined
+    };
+  }
+
+  /**
+   * Apply feedback to agents involved in a task for ACE online learning
+   */
+  async applyTaskFeedback(params: {
+    taskId: string;
+    feedback: string;
+    strategy?: 'all' | 'primary' | 'weighted';
+  }): Promise<void> {
+    const involvement = this.getTaskAgentInvolvement(params.taskId);
+    if (!involvement) {
+      console.warn(`No execution history found for task ${params.taskId}`);
+      return;
+    }
+
+    const { involvedAgents, taskInput, agentResults } = involvement;
+    const strategy = params.strategy || 'all';
+
+    // Determine which agents to update based on strategy
+    let agentsToUpdate: string[] = [];
+    if (strategy === 'primary') {
+      agentsToUpdate = [involvement.rootAgent];
+    } else if (strategy === 'all' || strategy === 'weighted') {
+      agentsToUpdate = involvedAgents;
+    }
+
+    // Apply feedback to each involved agent
+    for (const agentName of agentsToUpdate) {
+      const agent = this.agents?.get(agentName);
+      if (agent && typeof (agent as any).applyOnlineUpdate === 'function') {
+        try {
+          await (agent as any).applyOnlineUpdate({
+            example: taskInput,
+            prediction: agentResults.get(agentName),
+            feedback: params.feedback
+          });
+        } catch (error) {
+          console.warn(`Failed to apply ACE feedback to agent ${agentName}:`, error);
+        }
+      }
+    }
+  }
+
+  /**
+   * Clean up old execution history (call periodically to prevent memory leaks)
+   */
+  cleanupOldExecutions(maxAgeMs: number = 3600000): void { // Default 1 hour
+    const cutoffTime = Date.now() - maxAgeMs;
+    for (const [taskId, context] of this.executionHistory) {
+      if (context.startTime < cutoffTime) {
+        this.executionHistory.delete(taskId);
+      }
+    }
+  }
+
+  /**
    * Cleans up the crew by dereferencing agents and resetting the state.
    */
   destroy() {
     this.agents = null;
+    this.executionHistory.clear();
     this.state.reset();
   }
 

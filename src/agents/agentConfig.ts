@@ -210,6 +210,7 @@ const parseAgentConfig = async (
       subAgentNames: agentConfigData.agents || [],
       examples: agentConfigData.examples || [],
       tracker: costTracker,
+      debug: (agentConfigData as any).options?.debug ?? (agentConfigData as any).debug ?? false,
     };
   } catch (error) {
     if (error instanceof Error) {

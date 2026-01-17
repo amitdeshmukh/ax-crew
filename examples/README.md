@@ -122,17 +122,55 @@ Key features:
 - Integration with external APIs via MCP servers
 - Cost tracking across agents
 
-### 5. AxCrew Basic Usage
-[`axcrew.ts`](./axcrew.ts)
+### 5. ACE Flight Assistant (Feedback Learning)
+[`ace-feedback-routing.ts`](./ace-feedback-routing.ts)
 
-A basic example showing core AxCrew features:
-- Setting up a crew
-- Adding agents
-- Using shared state
-- Cost tracking
-- Error handling
+Demonstrates ACE (Agentic Context Engineering) learning from user feedback:
+- A flight booking assistant using Google Flights MCP server
+- Real-time playbook updates based on user feedback
+- Persistence of learned preferences across sessions
+- Interactive CLI for flight queries
+
+**Required Setup:**
+```bash
+# Clone the Google Flights MCP server
+git clone https://github.com/opspawn/Google-Flights-MCP-Server.git
+cd Google-Flights-MCP-Server
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && playwright install
+
+# Set environment variable
+export GOOGLE_FLIGHTS_SERVER_PATH=/path/to/server.py
+```
+
+Key features:
+- ACE feedback loop integration
+- Playbook persistence to JSON
+- Learning from natural language feedback
+
+### 6. ACE Customer Support (Edge Case Learning)
+[`ace-customer-support.ts`](./ace-customer-support.ts)
+
+Shows how ACE learns to handle edge cases beyond standard policies:
+- A customer support agent with predefined company policies
+- Learning exceptions from supervisor feedback (e.g., "loyal customers get extended returns")
+- Applying learned exceptions to similar future cases
+- Interactive ticket handling demo
 
 **Required Dependencies:** None beyond core package
+
+```typescript
+// Example feedback that teaches the agent:
+// "For loyal customers (5+ years), extend return window to 60 days"
+// "Medical emergencies justify extended deadlines"
+// "Defective products override 'final sale' policy"
+```
+
+Key features:
+- Edge case learning from feedback
+- Policy exception handling
+- Playbook persistence showing learned rules
+- Sample tickets demonstrating various scenarios
 
 ## Running the Examples
 

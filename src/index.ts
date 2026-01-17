@@ -1,13 +1,18 @@
 import { AxCrew } from './agents/index.js';
 import { AxCrewFunctions } from './functions/index.js';
-import type { AxCrewConfig, AgentConfig } from './types.js';
+import type { AxCrewConfig, AxCrewOptions, AgentConfig } from './types.js';
 
 import type { 
   UsageCost, 
   AggregatedMetrics, 
   AggregatedCosts,
   StateInstance, 
-  FunctionRegistryType 
+  FunctionRegistryType,
+  ACEConfig,
+  ACETeacherConfig,
+  ACEPersistenceConfig,
+  ACEOptionsConfig,
+  ACEMetricConfig,
 } from './types.js';
 /**
  * Metrics types and helpers for request counts, token usage, and estimated cost.
@@ -46,6 +51,13 @@ export {
   type AggregatedCosts,
   type AgentConfig,
   type AxCrewConfig,
+  type AxCrewOptions,
   type StateInstance,
   type UsageCost,
+  // ACE type exports
+  type ACEConfig,
+  type ACETeacherConfig,
+  type ACEPersistenceConfig,
+  type ACEOptionsConfig,
+  type ACEMetricConfig,
 };

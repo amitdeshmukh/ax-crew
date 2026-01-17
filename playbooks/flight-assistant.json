@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "sections": {
+    "Guidelines": [
+      {
+        "id": "guidel-541925c9",
+        "section": "Guidelines",
+        "content": "Only show non-stop flights in the search results.",
+        "helpfulCount": 1,
+        "harmfulCount": 0,
+        "createdAt": "2025-12-30T03:44:39.741Z",
+        "updatedAt": "2025-12-30T03:44:39.741Z"
+      }
+    ]
+  },
+  "stats": {
+    "bulletCount": 1,
+    "helpfulCount": 1,
+    "harmfulCount": 0,
+    "tokenEstimate": 13
+  },
+  "updatedAt": "2025-12-30T03:44:39.743Z"
+}

@@ -851,6 +851,110 @@ npm run dev examples/telemetry-demo.ts
 4. **Custom Attributes**: Extend traces with custom attributes specific to your use case
 5. **Performance**: Telemetry adds minimal overhead when properly configured
 
+### ACE Support (Agentic Context Engineering)
+
+AxCrew integrates [Agentic Context Engineering (ACE)](https://www.youtube.com/watch?v=elgYgPo_vY4) from the Ax framework, enabling agents to learn and improve from human feedback. ACE maintains a "playbook" of learned rules that guide agent behavior, which can be persisted across sessions.
+
+#### Key Features
+
+- **Online Learning**: Agents learn from real-time feedback during conversations
+- **Playbook Persistence**: Save learned rules to JSON files or custom storage
+- **Teacher/Student Model**: Use a separate "teacher" LLM to distill feedback into actionable rules
+- **Feedback Routing**: Distribute feedback across agent dependency chains automatically
+
+#### Configuration
+
+Add the `ace` field to any agent configuration:
+
+```typescript
+{
+  name: "SupportAgent",
+  description: "Customer support agent",
+  signature: "ticket:string -> supportResponse:string, decision:string",
+  provider: "google-gemini",
+  providerKeyName: "GEMINI_API_KEY",
+  ai: { model: "gemini-flash-latest", temperature: 0.7 },
+  ace: {
+    teacher: {
+      provider: "google-gemini",
+      providerKeyName: "GEMINI_API_KEY",
+      ai: { model: "gemini-flash-latest" }
+    },
+    options: {
+      maxEpochs: 1,
+      allowDynamicSections: true
+    },
+    persistence: {
+      playbookPath: "playbooks/support-agent.json",
+      autoPersist: true
+    },
+    metric: {
+      primaryOutputField: "supportResponse"
+    }
+  }
+}
+```
+
+#### ACE Configuration Options
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `teacher` | object | Teacher model config (provider, model, apiURL) |
+| `persistence.playbookPath` | string | File path to save/load playbook |
+| `persistence.autoPersist` | boolean | Auto-save playbook after updates |
+| `persistence.onPersist` | function | Custom callback for saving playbook |
+| `persistence.onLoad` | function | Custom callback for loading playbook |
+| `options.maxEpochs` | number | Training epochs for offline compile |
+| `options.allowDynamicSections` | boolean | Allow playbook to create new sections |
+| `metric.primaryOutputField` | string | Output field to evaluate for quality |
+| `compileOnStart` | boolean | Run offline compile on agent init |
+
+#### Usage: Applying Feedback
+
+```typescript
+import { AxCrew, AxCrewFunctions } from '@amitdeshmukh/ax-crew';
+
+const crew = new AxCrew(config, AxCrewFunctions);
+await crew.addAgentsToCrew(['SupportAgent']);
+
+const agent = crew.agents.get('SupportAgent');
+
+// Run the agent
+const result = await agent.forward({ ticket: "Customer wants refund after 45 days" });
+const taskId = result._taskId;
+
+// Apply feedback to teach the agent
+await crew.applyTaskFeedback({
+  taskId,
+  feedback: "For loyal customers (5+ years), extend return window to 60 days",
+  strategy: "all"  // Apply to all agents involved in this task
+});
+
+// View the learned playbook
+const playbook = agent.getPlaybook?.();
+console.log(playbook);
+```
+
+#### Feedback Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| `"all"` | Apply feedback to all agents involved in the task |
+| `"primary"` | Apply only to the primary (entry) agent |
+| `"leaf"` | Apply only to leaf agents (no sub-agents) |
+
+#### Examples
+
+See the ACE examples for complete demonstrations:
+
+- [`ace-customer-support.ts`](examples/ace-customer-support.ts) - Learn edge-case handling beyond standard policies
+- [`ace-feedback-routing.ts`](examples/ace-feedback-routing.ts) - Flight assistant with preference learning
+
+```bash
+# Run the customer support demo
+npx tsx examples/ace-customer-support.ts
+```
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version updates.

@@ -1,0 +1,32 @@
+{
+  "sections": {
+    "Guidelines": [
+      {
+        "id": "guidel-9507499a",
+        "section": "Guidelines",
+        "content": "For returning customers who have spent $15000 over 8 years, exercise compassion and allow a refund.",
+        "helpfulCount": 1,
+        "harmfulCount": 0,
+        "createdAt": "2026-01-13T13:07:18.958Z",
+        "updatedAt": "2026-01-13T13:07:18.958Z"
+      },
+      {
+        "id": "guidel-8b3abea4",
+        "section": "Guidelines",
+        "content": "Always refund orders that have incurred shipping damage.",
+        "helpfulCount": 1,
+        "harmfulCount": 0,
+        "createdAt": "2026-01-17T10:00:30.736Z",
+        "updatedAt": "2026-01-17T10:00:30.736Z"
+      }
+    ]
+  },
+  "createdAt": null,
+  "updatedAt": "2026-01-17T10:00:30.736Z",
+  "stats": {
+    "bulletCount": 2,
+    "helpfulCount": 2,
+    "harmfulCount": 0,
+    "tokenEstimate": 39
+  }
+}
