@@ -73,7 +73,13 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
       const mcpClient = new AxMCPClient(transport, {debug: agentConfigData.debug || false});
       await mcpClient.init();
       initializedClients.push(mcpClient);
-      functions.push(...mcpClient.toFunction());
+      // Normalize MCP tool schemas: some MCP servers omit `parameters` for
+      // zero-arg tools, but providers like Gemini require a valid schema.
+      const mcpFns = mcpClient.toFunction().map(fn => ({
+        ...fn,
+        parameters: fn.parameters ?? { type: 'object' as const, properties: {} },
+      }));
+      functions.push(...mcpFns);
     }
     
     return functions;
