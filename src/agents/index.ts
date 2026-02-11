@@ -651,10 +651,17 @@ class AxCrew {
         }
       }
 
+      // Resolve factory functions (e.g., () => new Foo(state).toFunction()) into
+      // AxFunction objects before instrumenting, since spreading a JS function
+      // does not copy non-enumerable properties like `name`.
+      const resolvedFunctions: AxFunction[] = uniqueFunctions.map(fn =>
+        typeof fn === 'function' ? (fn as () => AxFunction)() : fn
+      );
+
       // Wrap each function handler to record call count and latency in MetricsRegistry
       const crewId = this.crewId;
       const agentNameForMetrics = name;
-      const instrumentedFunctions: AxFunction[] = uniqueFunctions.map(fn => ({
+      const instrumentedFunctions: AxFunction[] = resolvedFunctions.map(fn => ({
         ...fn,
         func: async (args?: any, extra?: any) => {
           const fnStart = performance.now();
