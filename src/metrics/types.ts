@@ -18,9 +18,17 @@ export interface RequestStats {
   durationCount: number;
 }
 
+export interface FunctionCallDetail {
+  name: string;
+  calls: number;
+  totalLatencyMs: number;
+}
+
 export interface FunctionStats {
   totalFunctionCalls: number;
   totalFunctionLatencyMs: number;
+  /** Per-function breakdown of calls and latency */
+  details?: FunctionCallDetail[];
 }
 
 export interface MetricsSnapshot {

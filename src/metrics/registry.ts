@@ -3,6 +3,8 @@ import Big from 'big.js';
 
 type Key = string;
 
+type FunctionCounter = { calls: number; latencyMs: number };
+
 type Counters = {
   requests: number;
   errors: number;
@@ -14,6 +16,8 @@ type Counters = {
   estimatedCostUSD: number;
   functionCalls: number;
   functionLatencyMs: number;
+  /** Per-function-name breakdown */
+  functionDetails: Map<string, FunctionCounter>;
 };
 
 const store = new Map<Key, Counters>();
@@ -38,6 +42,7 @@ function getOrInit(labels: LabelKeys): Counters {
       estimatedCostUSD: 0,
       functionCalls: 0,
       functionLatencyMs: 0,
+      functionDetails: new Map(),
     };
     store.set(k, c);
   }
@@ -87,11 +92,20 @@ export function recordEstimatedCost(labels: LabelKeys, usd: number) {
 
 /**
  * Record a function call invocation and add its latency to totals.
+ * @param labels Crew/agent identifiers
+ * @param latencyMs Duration of the function call in milliseconds
+ * @param functionName Optional name of the function that was called
  */
-export function recordFunctionCall(labels: LabelKeys, latencyMs: number) {
+export function recordFunctionCall(labels: LabelKeys, latencyMs: number, functionName?: string) {
   const c = getOrInit(labels);
   c.functionCalls += 1;
   c.functionLatencyMs += latencyMs || 0;
+  if (functionName) {
+    const detail = c.functionDetails.get(functionName) || { calls: 0, latencyMs: 0 };
+    detail.calls += 1;
+    detail.latencyMs += latencyMs || 0;
+    c.functionDetails.set(functionName, detail);
+  }
 }
 
 /**
@@ -120,8 +134,19 @@ export function snapshot(labels: LabelKeys): MetricsSnapshot {
     functions: {
       totalFunctionCalls: c.functionCalls,
       totalFunctionLatencyMs: c.functionLatencyMs,
+      details: detailsFromMap(c.functionDetails),
     },
   };
+}
+
+/** Convert internal function detail map to sorted array */
+function detailsFromMap(m: Map<string, FunctionCounter>) {
+  if (m.size === 0) return undefined;
+  return Array.from(m.entries()).map(([name, d]) => ({
+    name,
+    calls: d.calls,
+    totalLatencyMs: d.latencyMs,
+  }));
 }
 
 /**
@@ -140,7 +165,7 @@ export function reset(labels?: LabelKeys) {
  * Aggregate a crew-wide metrics snapshot across all agents in the crew.
  */
 export function snapshotCrew(crewId: string): MetricsSnapshot {
-  const empty: Counters = {
+  const empty: Omit<Counters, 'functionDetails'> & { functionDetails: Map<string, FunctionCounter> } = {
     requests: 0,
     errors: 0,
     streaming: 0,
@@ -151,6 +176,7 @@ export function snapshotCrew(crewId: string): MetricsSnapshot {
     estimatedCostUSD: 0,
     functionCalls: 0,
     functionLatencyMs: 0,
+    functionDetails: new Map(),
   };
   const agg = Array.from(store.entries()).reduce((acc, [k, v]) => {
     if (k.startsWith(crewId + '|')) {
@@ -164,9 +190,16 @@ export function snapshotCrew(crewId: string): MetricsSnapshot {
       acc.estimatedCostUSD = Number(new Big(acc.estimatedCostUSD || 0).plus(v.estimatedCostUSD || 0));
       acc.functionCalls += v.functionCalls;
       acc.functionLatencyMs += v.functionLatencyMs;
+      // Merge per-function details
+      for (const [fnName, d] of v.functionDetails) {
+        const existing = acc.functionDetails.get(fnName) || { calls: 0, latencyMs: 0 };
+        existing.calls += d.calls;
+        existing.latencyMs += d.latencyMs;
+        acc.functionDetails.set(fnName, existing);
+      }
     }
     return acc;
-  }, { ...empty });
+  }, empty);
 
   const totalTokens = agg.inputTokens + agg.outputTokens;
   return {
@@ -187,6 +220,7 @@ export function snapshotCrew(crewId: string): MetricsSnapshot {
     functions: {
       totalFunctionCalls: agg.functionCalls,
       totalFunctionLatencyMs: agg.functionLatencyMs,
+      details: detailsFromMap(agg.functionDetails),
     },
   } as MetricsSnapshot;
 }

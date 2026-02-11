@@ -651,6 +651,26 @@ class AxCrew {
         }
       }
 
+      // Wrap each function handler to record call count and latency in MetricsRegistry
+      const crewId = this.crewId;
+      const agentNameForMetrics = name;
+      const instrumentedFunctions: AxFunction[] = uniqueFunctions.map(fn => ({
+        ...fn,
+        func: async (args?: any, extra?: any) => {
+          const fnStart = performance.now();
+          try {
+            return await fn.func(args, extra);
+          } finally {
+            const latencyMs = performance.now() - fnStart;
+            MetricsRegistry.recordFunctionCall(
+              { crewId, agent: agentNameForMetrics },
+              latencyMs,
+              fn.name
+            );
+          }
+        },
+      }));
+
       // Create an instance of StatefulAxAgent
       // Set crew reference in state for execution tracking (ACE feedback routing)
       const agentState = { ...this.state, crew: this };
@@ -661,7 +681,7 @@ class AxCrew {
           description,
           definition: (agentConfig as any).definition,
           signature,
-          functions: uniqueFunctions,
+          functions: instrumentedFunctions,
           agents: uniqueSubAgents,
           examples,
           debug: (agentConfig as any).debug,
