@@ -1,5 +1,28 @@
 # Changelog
 
+## [8.1.0] - 2026-03-04
+
+### Added
+- Per-agent execution engine selection via `executionMode: "axagent" | "axgen"` with internal routing.
+- `axAgentOptions` support to configure modern AxAgent RLM capabilities from AxCrew.
+- RLM examples:
+  - `examples/rlm-long-task.ts` (long task + context management + cost output)
+  - `examples/rlm-shared-fields.ts` (shared fields + sub-agent propagation + cost output)
+- New test coverage for execution-mode metrics parity: `tests/execution-mode-metrics.test.ts`.
+
+### Changed
+- Preserved external invocation API (`forward` / `streamingForward`) while routing internally by `executionMode`.
+- Updated README and docs to explain:
+  - why AxAgent changed (RLM split architecture),
+  - mandatory RLM options (`axAgentOptions.runtime`, `axAgentOptions.contextFields`),
+  - metrics-first cost reporting terminology.
+
+### Fixed
+- `examples/graphjin-database-agent.ts` now:
+  - initializes agents inside `main()` for proper error handling,
+  - always calls `crew.destroy()` in `finally`,
+  - uses `answer` output consistently for `ManagerAgent`.
+
 ## [8.0.0] - 2025-01-17
 
 ### Added
@@ -320,4 +343,3 @@ v2.0.0.html).
 
 ### Fixed
 - Updates to [dateTime.ts](src/dateTime.ts) to enable use in Gemini models
-
