@@ -6,6 +6,8 @@ import { AxMCPStdioTransport } from '@ax-llm/ax-tools'
 // Resolve env by provided key name
 import type { 
   AgentConfig,
+  AgentExecutionMode,
+  AxCrewAxAgentOptions,
   AxCrewConfig,
   AxCrewOptions,
   FunctionRegistryType, 
@@ -204,11 +206,16 @@ const parseAgentConfig = async (
       // Add MCP functions to functions
       ...mcpFunctions
     ];
+
+    const executionMode: AgentExecutionMode =
+      agentConfigData.executionMode === 'axgen' ? 'axgen' : 'axagent';
     
     // Return AI instance and Agent parameters
     return {
       ai: aiInstance,
       name: agentName,
+      executionMode,
+      axAgentOptions: (agentConfigData.axAgentOptions ?? {}) as AxCrewAxAgentOptions,
       description: agentConfigData.description,
       definition: (agentConfigData as any).definition ?? (agentConfigData as any).prompt,
       signature: agentConfigData.signature,
