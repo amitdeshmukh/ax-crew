@@ -50,6 +50,7 @@ const config = {
   crew: [{
     name: "Planner",
     description: "Creates a plan to complete a task",
+    executionMode: "axagent", // "axagent" | "axgen"
     signature: "task:string \"a task to be completed\" -> plan:string \"a plan to execute the task\"",
     provider: "google-gemini",
     providerKeyName: "GEMINI_API_KEY",
@@ -126,6 +127,7 @@ Key TypeScript features:
 - **Functions (tools)**: Register callable functions via a registry and reference by name in agent `functions`.
 - **State**: `crew.state.set/get/getAll()` shared across all agents.
 - **Persona**: Use `definition` (preferred) or `prompt` to set the system program. If both are present, `definition` wins.
+- **Execution mode**: Set `executionMode` to `axagent` (default) or `axgen` per agent.
 - **Streaming**: Use `streamingForward()` for token streams.
 - **Metrics**: Per‑agent `getMetrics()` + crew‑level `getCrewMetrics()` snapshots.
 
@@ -184,6 +186,103 @@ Add either field to any agent config. The chosen value becomes the Ax agent's un
 }
 ```
 
+### Execution Modes (`axagent` | `axgen`)
+
+Each agent can run in one of two execution modes supported by AxLLM:
+
+- `axagent` (default): Uses AxAgent capabilities.
+- `axgen`: Uses AxGen capabilities.
+
+Set mode in config:
+
+```json
+{
+  "name": "Planner",
+  "description": "Creates plans",
+  "executionMode": "axgen",
+  "signature": "task:string -> plan:string",
+  "provider": "google-gemini",
+  "providerKeyName": "GEMINI_API_KEY",
+  "ai": { "model": "gemini-1.5-flash", "temperature": 0 }
+}
+```
+
+Execution is routed internally by `executionMode` while you continue to call the same public APIs (`forward` / `streamingForward`).
+There is no external API split and no caller-side branching for `axagent` vs `axgen`.
+
+### AxAgent RLM Support
+
+`AxAgent` in newer Ax versions moved to an RLM split architecture (Actor/Responder + runtime loop).
+AxCrew supports this directly so you can use modern AxAgent capabilities without changing the AxCrew call surface.
+
+To configure those capabilities in AxCrew, use `axAgentOptions` on an agent (effective when `executionMode` is `axagent`):
+
+```typescript
+const config = {
+  crew: [{
+    name: "Researcher",
+    description: "Deep research agent",
+    executionMode: "axagent",
+    signature: "query:string, context:string? -> answer:string",
+    provider: "google-gemini",
+    providerKeyName: "GEMINI_API_KEY",
+    ai: { model: "gemini-1.5-pro", temperature: 0 },
+    axAgentOptions: {
+      runtime,
+      contextFields: ["context"],
+      mode: "simple",
+      maxTurns: 12
+    }
+  }]
+};
+```
+
+RLM mode requirements:
+- `axAgentOptions.runtime`: Provide an `AxJSRuntime` instance for runtime execution.
+- `axAgentOptions.contextFields`: Required in RLM mode (can be an empty array when no context fields are needed).
+
+Example runtime wiring:
+
+```typescript
+import { AxJSRuntime, AxJSRuntimePermission } from '@ax-llm/ax';
+
+const runtime = new AxJSRuntime({
+  permissions: [AxJSRuntimePermission.TIMING],
+});
+
+const config = {
+  crew: [{
+    name: "Analyzer",
+    executionMode: "axagent",
+    // ...
+    axAgentOptions: {
+      runtime,
+      contextFields: ["context"]
+    }
+  }]
+};
+```
+
+Why this exists:
+- Upstream AxAgent changed to support richer RLM behaviors (runtime-backed decomposition, actor/responder separation, context management).
+- AxCrew needs to preserve compatibility while exposing these capabilities.
+- `executionMode` keeps this explicit per-agent and lets AxCrew route internally with zero external API change.
+
+`forward()` and `streamingForward()` remain unchanged; AxCrew routes internally based on `executionMode`.
+
+### RLM Examples (with cost and tracing verification)
+
+The following examples in this repo demonstrate equivalent RLM behavior in AxCrew and print accumulated costs at the end:
+
+- [`examples/rlm-long-task.ts`](examples/rlm-long-task.ts): Long-task analysis with context management and RLM runtime.
+- [`examples/rlm-shared-fields.ts`](examples/rlm-shared-fields.ts): Shared-field propagation with parent/child AxAgent setup.
+
+Both examples:
+- run through the same public `forward()` API
+- use AxAgent RLM options through `axAgentOptions`
+- print per-agent and crew metrics (`estimatedCostUSD`, token usage)
+- are compatible with telemetry/tracing instrumentation
+
 ### Agent Examples
 You can provide examples to guide the behavior of your agents using the `examples` field in the agent configuration. Examples help the agent understand the expected input/output format and improve its responses.
 
@@ -236,7 +335,7 @@ Here's an example of how to set up the `FunctionRegistry` with built-in function
 
 ```javascript
 import { AxCrewFunctions } from '@amitdeshmukh/ax-crew';
-const crew = new AxCrew(configFilePath, AxCrewFunctions);
+const crew = new AxCrew(config, AxCrewFunctions);
 ```
 
 if you want to bring your own functions, you can do so by creating a new instance of `FunctionRegistry` and passing it to the `AxCrew` constructor.
@@ -248,7 +347,7 @@ const myFunctions: FunctionRegistryType = {
   GoogleSearch: googleSearchInstance.toFunction()
 };
 
-const crew = new AxCrew(configFilePath, myFunctions);
+const crew = new AxCrew(config, myFunctions);
 ```
 
 ### Adding Agents to the Crew
@@ -368,7 +467,7 @@ import { AxCrew, AxCrewFunctions } from '@amitdeshmukh/ax-crew';
 
 // Create a new instance of AxCrew
 const crew = new AxCrew(config, AxCrewFunctions);
-crew.addAgentsToCrew(['Planner', 'Calculator', 'Manager']);
+await crew.addAgentsToCrew(['Planner', 'Calculator', 'Manager']);
 
 // Get agent instances
 const Planner = crew.agents.get("Planner");
@@ -714,7 +813,7 @@ crew.resetCosts();
 ```
 
 Notes:
-- Legacy cost APIs (`getLastUsageCost`, `getAccumulatedCosts`, `getAggregatedCosts`) are superseded by metrics methods.
+- Legacy cost APIs (`getLastUsageCost`, `getAccumulatedCosts`, `getAggregatedCosts`) are superseded by metrics APIs.
 - Estimated cost values are numbers rounded to 5 decimal places.
 
 ### Telemetry Support (OpenTelemetry)
@@ -941,14 +1040,14 @@ console.log(playbook);
 |----------|-------------|
 | `"all"` | Apply feedback to all agents involved in the task |
 | `"primary"` | Apply only to the primary (entry) agent |
-| `"leaf"` | Apply only to leaf agents (no sub-agents) |
+| `"weighted"` | Apply to all involved agents (reserved for weighted scoring flows) |
 
 #### Examples
 
 See the ACE examples for complete demonstrations:
 
 - [`ace-customer-support.ts`](examples/ace-customer-support.ts) - Learn edge-case handling beyond standard policies
-- [`ace-feedback-routing.ts`](examples/ace-feedback-routing.ts) - Flight assistant with preference learning
+- [`ace-flight-finder.ts`](examples/ace-flight-finder.ts) - Flight assistant with preference learning
 
 ```bash
 # Run the customer support demo
