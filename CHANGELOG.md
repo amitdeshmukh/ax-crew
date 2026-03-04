@@ -12,6 +12,7 @@
 
 ### Changed
 - Preserved external invocation API (`forward` / `streamingForward`) while routing internally by `executionMode`.
+- Updated peer dependency minimums to `@ax-llm/ax@^19.0.11` and `@ax-llm/ax-tools@^19.0.11`.
 - Updated README and docs to explain:
   - why AxAgent changed (RLM split architecture),
   - mandatory RLM options (`axAgentOptions.runtime`, `axAgentOptions.contextFields`),
