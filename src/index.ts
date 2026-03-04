@@ -1,6 +1,6 @@
 import { AxCrew } from './agents/index.js';
 import { AxCrewFunctions } from './functions/index.js';
-import type { AxCrewConfig, AxCrewOptions, AgentConfig } from './types.js';
+import type { AxCrewConfig, AxCrewOptions, AgentConfig, AgentExecutionMode, AxCrewAxAgentOptions } from './types.js';
 
 import type { 
   UsageCost, 
@@ -50,6 +50,8 @@ export {
   type AggregatedMetrics,
   type AggregatedCosts,
   type AgentConfig,
+  type AgentExecutionMode,
+  type AxCrewAxAgentOptions,
   type AxCrewConfig,
   type AxCrewOptions,
   type StateInstance,

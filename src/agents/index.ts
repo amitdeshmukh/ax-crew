@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { AxAgent, AxAI } from "@ax-llm/ax";
+import { AxAgent, AxAI, AxGen } from "@ax-llm/ax";
 
 import type {
   AxSignature,
@@ -18,6 +18,8 @@ import type {
    AxCrewOptions,
    MCPTransportConfig,
    ACEConfig,
+   AgentExecutionMode,
+   AxCrewAxAgentOptions,
 } from "../types.js";
 
 import { createState }   from "../state/index.js";
@@ -28,6 +30,8 @@ import { MetricsRegistry } from "../metrics/index.js";
 interface ParsedAgentConfig {
   ai: AxAI;
   name: string;
+  executionMode: AgentExecutionMode;
+  axAgentOptions?: AxCrewAxAgentOptions;
   description: string;
   definition?: string;
   signature: string | AxSignature;
@@ -47,9 +51,14 @@ class StatefulAxAgent extends AxAgent<any, any> {
   state: StateInstance;
   axai: any;
   private agentName: string;
+  private agentDefinition: string;
+  private executionMode: AgentExecutionMode;
+  private axGenProgram: AxGen<any, any>;
   private costTracker?: any;
-  private lastRecordedCostUSD: number = 0;
   private debugEnabled: boolean = false;
+  private static readonly modernAxAgentRuntime =
+    typeof (AxAgent as any)?.prototype?.getFunction === "function" &&
+    typeof (AxAgent as any)?.prototype?.setExamples !== "function";
   // ACE-related optional state
   private aceConfig?: ACEConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,15 +68,14 @@ class StatefulAxAgent extends AxAgent<any, any> {
   private isAxAIService(obj: any): obj is AxAI {
     return !!obj && typeof obj.getName === 'function' && typeof obj.chat === 'function';
   }
-  private isAxAIInstance(obj: any): obj is AxAI {
-    return !!obj && typeof obj === 'object' && ('defaults' in obj || 'modelInfo' in obj);
-  }
 
   constructor(
     ai: AxAI,
     options: Readonly<{
       name: string;
       description: string;
+      executionMode?: AgentExecutionMode;
+      axAgentOptions?: AxCrewAxAgentOptions;
       definition?: string;
       signature: string | AxSignature;
       agents?: AxAgentic<any, any>[] | undefined;
@@ -78,161 +86,342 @@ class StatefulAxAgent extends AxAgent<any, any> {
     }>,
     state: StateInstance
   ) {
-    const { examples, debug, ...restOptions } = options;
-    const formattedOptions = {
-      ...restOptions,
-      functions: restOptions.functions?.map((fn) =>
-        typeof fn === "function" ? fn() : fn
-      ) as AxFunction[] | undefined,
-    };
-    super(formattedOptions);
+    const { examples, debug } = options;
+    const resolvedFunctions = (options.functions ?? []).map((fn) =>
+      typeof fn === "function" ? fn() : fn
+    ) as AxFunction[];
+    const resolvedAgents = (options.agents ?? []) as AxAgentic<any, any>[];
+    const effectiveDefinition = (options.definition ?? options.description).trim();
+
+    if (StatefulAxAgent.modernAxAgentRuntime) {
+      const configuredAgentOptions = (options.axAgentOptions ?? {}) as Record<string, any>;
+      const configuredAgentGraph = (configuredAgentOptions.agents ?? {}) as Record<string, any>;
+      const configuredFunctionGraph = (configuredAgentOptions.functions ?? {}) as Record<string, any>;
+      const configuredActorOptions = (configuredAgentOptions.actorOptions ?? {}) as Record<string, any>;
+      const configuredResponderOptions = (configuredAgentOptions.responderOptions ?? {}) as Record<string, any>;
+
+      const modernOptions: Record<string, unknown> = {
+        ...configuredAgentOptions,
+        debug: debug ?? configuredAgentOptions.debug ?? false,
+        contextFields: Array.isArray(configuredAgentOptions.contextFields)
+          ? configuredAgentOptions.contextFields
+          : [],
+      };
+
+      modernOptions.agents = {
+        ...configuredAgentGraph,
+        local: resolvedAgents,
+      };
+      modernOptions.functions = {
+        ...configuredFunctionGraph,
+        local: resolvedFunctions,
+      };
+
+      if (effectiveDefinition.length > 0) {
+        modernOptions.actorOptions = {
+          ...configuredActorOptions,
+          description: configuredActorOptions.description ?? effectiveDefinition,
+        };
+        modernOptions.responderOptions = {
+          ...configuredResponderOptions,
+          description: configuredResponderOptions.description ?? effectiveDefinition,
+        };
+      } else {
+        modernOptions.actorOptions = configuredActorOptions;
+        modernOptions.responderOptions = configuredResponderOptions;
+      }
+
+      super(
+        {
+          ai,
+          agentIdentity: {
+            name: options.name,
+            description: options.description,
+          },
+          signature: options.signature as any,
+        } as any,
+        modernOptions as any
+      );
+    } else {
+      super(
+        {
+          name: options.name,
+          description: options.description,
+          definition: options.definition,
+          signature: options.signature,
+          agents: resolvedAgents,
+          functions: resolvedFunctions,
+          debug: debug ?? false,
+        } as any,
+        {} as any
+      );
+    }
+
     this.state = state;
     this.axai = ai;
     this.agentName = options.name;
+    this.agentDefinition = effectiveDefinition;
+    this.executionMode = options.executionMode ?? "axagent";
     this.debugEnabled = debug ?? false;
+    this.axGenProgram = new AxGen(options.signature as any, {
+      description: effectiveDefinition,
+      functions: resolvedFunctions,
+    } as any);
 
-    // Set examples if provided
+    for (const agent of resolvedAgents) {
+      try {
+        const childName = agent.getFunction().name;
+        this.axGenProgram.register(agent as any, childName);
+      } catch {
+        // Best-effort registration for optimizer/introspection support.
+      }
+    }
+
+    // Apply examples to compatibility layer if provided
     if (examples && examples.length > 0) {
-      super.setExamples(examples);
+      this.setExamplesCompat(examples);
     }
   }
 
-  // Function overloads for forward method
-  async forward(values: Record<string, any>, options?: Readonly<AxProgramForwardOptions<any>>): Promise<Record<string, any>>;
-  async forward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramForwardOptions<any>>): Promise<Record<string, any>>;
-  
-  // Implementation
-  async forward(
+  /**
+   * @deprecated Use setExamplesCompat() to avoid Ax runtime version coupling.
+   */
+  setExamples(examples: Readonly<Array<Record<string, any>>>): void {
+    this.setExamplesCompat(examples);
+  }
+
+  setExamplesCompat(examples: Readonly<Array<Record<string, any>>>): void {
+    this.axGenProgram.setExamples(examples as any);
+
+    const baseSetExamples = (AxAgent.prototype as any).setExamples;
+    if (typeof baseSetExamples === "function") {
+      baseSetExamples.call(this, examples);
+      return;
+    }
+
+    const internalProgram = (this as any).program;
+    if (typeof internalProgram?.setExamples === "function") {
+      internalProgram.setExamples(examples as any);
+    }
+  }
+
+  /**
+   * @deprecated Use setDescriptionCompat() to avoid Ax runtime version coupling.
+   */
+  setDescription(description: string): void {
+    this.setDescriptionCompat(description);
+  }
+
+  setDescriptionCompat(description: string): void {
+    this.agentDefinition = description;
+    this.axGenProgram.setDescription(description);
+
+    const baseSetDescription = (AxAgent.prototype as any).setDescription;
+    if (typeof baseSetDescription === "function") {
+      baseSetDescription.call(this, description);
+      return;
+    }
+
+    const agentRuntime = this as any;
+    if (typeof agentRuntime.program?.setDescription === "function") {
+      agentRuntime.program.setDescription(description);
+    }
+    agentRuntime.actorDescription = description;
+    agentRuntime.responderDescription = description;
+    if (typeof agentRuntime._buildSplitPrograms === "function") {
+      agentRuntime._buildSplitPrograms();
+    }
+  }
+
+  override getUsage() {
+    if (this.executionMode === "axgen") {
+      return this.axGenProgram.getUsage();
+    }
+    return super.getUsage();
+  }
+
+  override resetUsage() {
+    this.axGenProgram.resetUsage();
+    super.resetUsage();
+  }
+
+  private resolveInvocationArgs<TOptions>(
+    first: Record<string, any> | AxAI,
+    second?: Record<string, any> | Readonly<TOptions>,
+    third?: Readonly<TOptions>
+  ): {
+    ai: AxAI;
+    values: Record<string, any>;
+    options?: Readonly<TOptions>;
+    calledWithAI: boolean;
+  } {
+    const calledWithAI = this.isAxAIService(first);
+    const ai = (calledWithAI ? first : this.axai) as AxAI;
+    if (!ai) {
+      throw new Error(`No AI instance is configured for agent "${this.agentName}"`);
+    }
+
+    const values = (calledWithAI ? second : first) as Record<string, any>;
+    const options = (calledWithAI ? third : second) as Readonly<TOptions> | undefined;
+
+    return { ai, values, options, calledWithAI };
+  }
+
+  private async executeForwardByMode(
+    mode: AgentExecutionMode,
+    ai: AxAI,
+    values: Record<string, any>,
+    options?: Readonly<AxProgramForwardOptions<any>>
+  ): Promise<Record<string, any>> {
+    if (mode === "axgen") {
+      return this.axGenProgram.forward(ai, values, options as any);
+    }
+    return super.forward(ai, values, options as any);
+  }
+
+  private recordUsageMetrics(
+    labels: { crewId: string; agent: string },
+    mode: AgentExecutionMode
+  ): void {
+    const builtIn =
+      mode === "axgen" ? this.axGenProgram.getUsage?.() : super.getUsage?.();
+    if (!Array.isArray(builtIn)) return;
+
+    const totals = builtIn.reduce(
+      (acc: any, u: any) => {
+        const pt = u.tokens?.promptTokens ?? u.promptTokens ?? 0;
+        const ct = u.tokens?.completionTokens ?? u.completionTokens ?? 0;
+        acc.promptTokens += typeof pt === "number" ? pt : 0;
+        acc.completionTokens += typeof ct === "number" ? ct : 0;
+        const model =
+          u.model ||
+          (this.axai as any)?.getLastUsedChatModel?.() ||
+          (this.axai as any)?.defaults?.model;
+        if (model) {
+          acc.byModel[model] = (acc.byModel[model] || 0) + (pt + ct);
+        }
+        return acc;
+      },
+      { promptTokens: 0, completionTokens: 0, byModel: {} as Record<string, number> }
+    );
+
+    MetricsRegistry.recordTokens(labels, {
+      promptTokens: totals.promptTokens,
+      completionTokens: totals.completionTokens,
+      totalTokens: totals.promptTokens + totals.completionTokens,
+    });
+
+    const costTracker = (this as any).costTracker;
+    try {
+      for (const [m, count] of Object.entries(totals.byModel)) {
+        costTracker?.trackTokens?.(count, m);
+      }
+      const totalUSD = Number(costTracker?.getCurrentCost?.() ?? 0);
+      if (!Number.isNaN(totalUSD) && totalUSD > 0) {
+        MetricsRegistry.recordEstimatedCost(labels, totalUSD);
+      }
+    } catch {}
+  }
+
+  private async runForwardInvocation(
+    mode: AgentExecutionMode,
     first: Record<string, any> | AxAI,
     second?: Record<string, any> | Readonly<AxProgramForwardOptions<any>>,
     third?: Readonly<AxProgramForwardOptions<any>>
   ): Promise<Record<string, any>> {
-    let result;
+    const { ai, values, options, calledWithAI } = this.resolveInvocationArgs(
+      first,
+      second,
+      third
+    );
 
     const start = performance.now();
-    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
-    const labels = { crewId, agent: this.agentName } as any;
-    const input = this.isAxAIService(first) ? second : first;
+    const crewId = (this.state as any)?.crewId || this.state.get?.("crewId") || "default";
+    const labels = { crewId, agent: this.agentName };
     const taskId = `task_${crewId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Track execution context in crew for ACE feedback routing
     const crewInstance = (this.state as any)?.crew as AxCrew;
     if (crewInstance) {
-      if (this.isAxAIService(first)) {
-        // For sub-agent calls, track under parent task ID
+      if (calledWithAI) {
         const parentTaskId = (this.state as any)?.currentTaskId;
         if (parentTaskId) {
-          crewInstance.trackAgentExecution(parentTaskId, this.agentName, input);
+          crewInstance.trackAgentExecution(parentTaskId, this.agentName, values);
         }
       } else {
-        // Root-level call - start new execution tracking
-        crewInstance.trackAgentExecution(taskId, this.agentName, input);
+        crewInstance.trackAgentExecution(taskId, this.agentName, values);
         (this.state as any).currentTaskId = taskId;
       }
     }
 
-    // Before forward: compose instruction with current playbook (mirrors AxACE.compile behavior)
-    // This ensures the agent uses the latest playbook context for this call
     if (this.debugEnabled) {
-      console.log(`[ACE Debug] forward() called, aceConfig=${!!this.aceConfig}`);
+      console.log(`[ACE Debug] forward() called, mode=${mode}, aceConfig=${!!this.aceConfig}`);
     }
     if (this.aceConfig) {
       await this.composeInstructionWithPlaybook();
     }
 
-    // Execute the forward call
-    // Note: OpenTelemetry spans are automatically created by AxAI (configured via AxCrewOptions.telemetry)
-    if (this.isAxAIService(first)) {
-      // Sub-agent case (called with AI service)
-      result = await super.forward(this.axai, second as Record<string, any>, third);
-    } else {
-      // Direct call case
-      result = await super.forward(this.axai, first, second as Readonly<AxProgramForwardOptions<any>>);
-    }
+    const result = await this.executeForwardByMode(mode, ai, values, options);
 
-    // Track metrics and costs after the call using built-in usage
     const durationMs = performance.now() - start;
     MetricsRegistry.recordRequest(labels, false, durationMs);
-    // Always record tokens from built-in usage array if present
-    const builtIn = (this as any).getUsage?.();
-    if (Array.isArray(builtIn)) {
-      const totals = builtIn.reduce(
-        (acc: any, u: any) => {
-          const pt = u.tokens?.promptTokens ?? u.promptTokens ?? 0;
-          const ct = u.tokens?.completionTokens ?? u.completionTokens ?? 0;
-          acc.promptTokens += typeof pt === 'number' ? pt : 0;
-          acc.completionTokens += typeof ct === 'number' ? ct : 0;
-          // also aggregate per-model to feed Ax tracker
-          const model = u.model || (this.axai as any)?.getLastUsedChatModel?.() || (this.axai as any)?.defaults?.model;
-          if (model) {
-            acc.byModel[model] = (acc.byModel[model] || 0) + (pt + ct);
-          }
-          return acc;
-        },
-        { promptTokens: 0, completionTokens: 0, byModel: {} as Record<string, number> }
-      );
-      MetricsRegistry.recordTokens(labels, {
-        promptTokens: totals.promptTokens,
-        completionTokens: totals.completionTokens,
-        totalTokens: totals.promptTokens + totals.completionTokens,
-      });
-      // Feed Ax's cost tracker with token totals per model; Ax owns pricing
-      const costTracker = (this as any).costTracker;
-      try {
-        for (const [m, count] of Object.entries(totals.byModel)) {
-          costTracker?.trackTokens?.(count, m);
-        }
-        const totalUSD = Number(costTracker?.getCurrentCost?.() ?? 0);
-        if (!Number.isNaN(totalUSD) && totalUSD > 0) {
-          MetricsRegistry.recordEstimatedCost(labels, totalUSD);
-        }
-      } catch {}
-    }
+    this.recordUsageMetrics(labels, mode);
 
-    // Record result in crew execution history for ACE feedback routing
     if (crewInstance) {
-      if (this.isAxAIService(first)) {
-        // For sub-agent calls, record under parent task ID
+      if (calledWithAI) {
         const parentTaskId = (this.state as any)?.currentTaskId;
         if (parentTaskId) {
           crewInstance.recordAgentResult(parentTaskId, this.agentName, result);
         }
       } else {
-        // Root-level result - include taskId for feedback routing
         crewInstance.recordAgentResult(taskId, this.agentName, result);
-        // Clean up current task ID
         delete (this.state as any).currentTaskId;
-        // Attach taskId to result for feedback routing convenience
-        result._taskId = taskId;
+        (result as any)._taskId = taskId;
       }
     }
 
     return result;
   }
 
-  // Add streaming forward method overloads
-  streamingForward(values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions<any>>): AxGenStreamingOut<any>;
-  streamingForward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions<any>>): AxGenStreamingOut<any>;
-  
+  // Function overloads for forward method
+  async forward(values: Record<string, any>, options?: Readonly<AxProgramForwardOptions<any>>): Promise<Record<string, any>>;
+  async forward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramForwardOptions<any>>): Promise<Record<string, any>>;
+
   // Implementation
-  streamingForward(
+  async forward(
+    first: Record<string, any> | AxAI,
+    second?: Record<string, any> | Readonly<AxProgramForwardOptions<any>>,
+    third?: Readonly<AxProgramForwardOptions<any>>
+  ): Promise<Record<string, any>> {
+    return this.runForwardInvocation(this.executionMode, first, second, third);
+  }
+
+  private runStreamingInvocation(
+    mode: AgentExecutionMode,
     first: Record<string, any> | AxAI,
     second?: Record<string, any> | Readonly<AxProgramStreamingForwardOptions<any>>,
     third?: Readonly<AxProgramStreamingForwardOptions<any>>
   ): AxGenStreamingOut<any> {
+    const { ai, values, options } = this.resolveInvocationArgs(
+      first,
+      second,
+      third
+    );
     const start = performance.now();
-    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
-    const labels = { crewId, agent: this.agentName } as any;
-    let streamingResult: AxGenStreamingOut<any>;
-    
-    if (this.isAxAIService(first)) {
-      streamingResult = super.streamingForward(this.axai, second as Record<string, any>, third);
-    } else {
-      streamingResult = super.streamingForward(this.axai, first, second as Readonly<AxProgramStreamingForwardOptions<any>>);
-    }
+    const crewId = (this.state as any)?.crewId || this.state.get?.("crewId") || "default";
+    const labels = { crewId, agent: this.agentName };
 
-    // Create a new async generator that tracks costs after completion
-    const wrappedGenerator = (async function*(this: StatefulAxAgent) {
+    const createStream = () =>
+      mode === "axgen"
+        ? this.axGenProgram.streamingForward(ai, values, options as any)
+        : super.streamingForward(ai, values, options as any);
+
+    const wrappedGenerator = (async function* (this: StatefulAxAgent) {
+      if (this.aceConfig) {
+        await this.composeInstructionWithPlaybook();
+      }
+
+      const streamingResult = createStream();
       try {
         for await (const chunk of streamingResult) {
           yield chunk;
@@ -240,51 +429,24 @@ class StatefulAxAgent extends AxAgent<any, any> {
       } finally {
         const durationMs = performance.now() - start;
         MetricsRegistry.recordRequest(labels, true, durationMs);
-        // Record tokens from built-in usage array if present
-        const builtIn = (this as any).getUsage?.();
-        if (Array.isArray(builtIn)) {
-          const totals = builtIn.reduce(
-            (acc: any, u: any) => {
-              const pt = u.tokens?.promptTokens ?? u.promptTokens ?? 0;
-              const ct = u.tokens?.completionTokens ?? u.completionTokens ?? 0;
-              acc.promptTokens += typeof pt === 'number' ? pt : 0;
-              acc.completionTokens += typeof ct === 'number' ? ct : 0;
-              const model = u.model || (this.axai as any)?.getLastUsedChatModel?.() || (this.axai as any)?.defaults?.model;
-              if (model) {
-                acc.byModel[model] = (acc.byModel[model] || 0) + (pt + ct);
-              }
-              return acc;
-            },
-            { promptTokens: 0, completionTokens: 0, byModel: {} as Record<string, number> }
-          );
-          MetricsRegistry.recordTokens(labels, {
-            promptTokens: totals.promptTokens,
-            completionTokens: totals.completionTokens,
-            totalTokens: totals.promptTokens + totals.completionTokens,
-          });
-          const costTracker = (this as any).costTracker;
-          try {
-            for (const [m, count] of Object.entries(totals.byModel)) {
-              costTracker?.trackTokens?.(count, m);
-            }
-            const totalUSD = Number(costTracker?.getCurrentCost?.() ?? 0);
-            if (!Number.isNaN(totalUSD) && totalUSD > 0) {
-              MetricsRegistry.recordEstimatedCost(labels, totalUSD);
-            }
-          } catch {}
-        }
-        // Record estimated cost (USD) via attached tracker if available
-        const costTracker = (this as any).costTracker;
-        try {
-          const totalUSD = Number(costTracker?.getCurrentCost?.() ?? 0);
-          if (!Number.isNaN(totalUSD) && totalUSD > 0) {
-            MetricsRegistry.recordEstimatedCost(labels, totalUSD);
-          }
-        } catch {}
+        this.recordUsageMetrics(labels, mode);
       }
     }).bind(this)();
 
     return wrappedGenerator as AxGenStreamingOut<any>;
+  }
+
+  // Add streaming forward method overloads
+  streamingForward(values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions<any>>): AxGenStreamingOut<any>;
+  streamingForward(ai: AxAI, values: Record<string, any>, options?: Readonly<AxProgramStreamingForwardOptions<any>>): AxGenStreamingOut<any>;
+
+  // Implementation
+  streamingForward(
+    first: Record<string, any> | AxAI,
+    second?: Record<string, any> | Readonly<AxProgramStreamingForwardOptions<any>>,
+    third?: Readonly<AxProgramStreamingForwardOptions<any>>
+  ): AxGenStreamingOut<any> {
+    return this.runStreamingInvocation(this.executionMode, first, second, third);
   }
 
   // Legacy cost API removed: rely on Ax trackers for cost reporting
@@ -328,7 +490,8 @@ class StatefulAxAgent extends AxAgent<any, any> {
     if (!ace) return;
     try {
       // Capture base instruction BEFORE any playbook injection (mirrors AxACE.extractProgramInstruction)
-      this.aceBaseInstruction = this.getSignature().getDescription() || '';
+      this.aceBaseInstruction =
+        this.agentDefinition || this.getSignature().getDescription() || '';
       
       const { buildACEOptimizer, loadInitialPlaybook, createEmptyPlaybook } = await import('./ace.js');
       // Build optimizer with agent's AI as student
@@ -615,7 +778,7 @@ class AxCrew {
       );
 
       // Destructure with type assertion
-      const { ai, name, description, signature, functions, subAgentNames, examples, tracker } = agentConfig;
+      const { ai, name, executionMode, axAgentOptions, description, signature, functions, subAgentNames, examples, tracker } = agentConfig;
 
       // Get subagents for the AI agent
       const subAgents = subAgentNames.map((subAgentName: string) => {
@@ -685,6 +848,8 @@ class AxCrew {
         ai,
         {
           name,
+          executionMode,
+          axAgentOptions,
           description,
           definition: (agentConfig as any).definition,
           signature,

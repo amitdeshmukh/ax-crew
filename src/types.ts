@@ -4,12 +4,21 @@ import type {
   AxModelConfig,
   AxMCPStreamableHTTPTransportOptions,
   AxProgramForwardOptions,
-  AxAIArgs
+  AxAIArgs,
+  AxAgentOptions
 } from '@ax-llm/ax';
 
 // Provider ids are derived from Ax's factory arg type so new providers added in Ax
 // are picked up at compile time without updating AxCrew.
 export type Provider = AxAIArgs<any>['name'];
+export type AgentExecutionMode = 'axagent' | 'axgen';
+export type AxCrewAxAgentOptions =
+  Partial<Omit<AxAgentOptions, 'agents' | 'functions' | 'contextFields'>> & {
+    contextFields?: AxAgentOptions['contextFields'];
+    agents?: AxAgentOptions['agents'];
+    functions?: AxAgentOptions['functions'];
+    fields?: AxAgentOptions['fields'];
+  };
 
 /**
  * A state instance that is shared between agents.
@@ -208,6 +217,17 @@ interface ACEConfig {
 interface AgentConfig {
   name: string;
   description: string;
+  /**
+   * Choose the execution engine for this agent.
+   * - `axagent` (default): Uses AxAgent capabilities.
+   * - `axgen`: Uses AxGen capabilities.
+   */
+  executionMode?: AgentExecutionMode;
+  /**
+   * AxAgent runtime options (RLM mode, context fields, recursion, actor/responder options, etc).
+   * Only applies when executionMode is `axagent`.
+   */
+  axAgentOptions?: AxCrewAxAgentOptions;
   /**
    * Optional detailed persona/program definition. If provided, becomes the system prompt.
    * Must be at least 100 characters per Ax semantics.
