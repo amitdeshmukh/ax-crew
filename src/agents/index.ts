@@ -163,9 +163,17 @@ class StatefulAxAgent extends AxAgent<any, any> {
     this.agentDefinition = effectiveDefinition;
     this.executionMode = options.executionMode ?? "axgen";
     this.debugEnabled = debug ?? false;
+    // Convert sub-agents to callable functions so AxGen can invoke them as tools
+    const subAgentFunctions: AxFunction[] = resolvedAgents
+      .map(agent => {
+        try { return agent.getFunction() as AxFunction; }
+        catch { return undefined; }
+      })
+      .filter((fn): fn is AxFunction => fn !== undefined);
+
     this.axGenProgram = new AxGen(options.signature as any, {
       description: effectiveDefinition,
-      functions: resolvedFunctions,
+      functions: [...resolvedFunctions, ...subAgentFunctions],
     } as any);
 
     for (const agent of resolvedAgents) {

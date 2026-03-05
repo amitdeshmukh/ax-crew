@@ -1,5 +1,10 @@
 # Changelog
 
+## [8.3.0] - 2026-03-05
+
+### Fixed
+- Sub-agents were invisible to agents running in `axgen` execution mode. AxGen only supports functions/tools, not native sub-agents. Sub-agents are now converted to callable functions via `getFunction()` and included in the AxGen functions list, making them available as tools during execution.
+
 ## [8.1.0] - 2026-03-04
 
 ### Added
