@@ -208,7 +208,7 @@ const parseAgentConfig = async (
     ];
 
     const executionMode: AgentExecutionMode =
-      agentConfigData.executionMode === 'axgen' ? 'axgen' : 'axagent';
+      agentConfigData.executionMode === 'axagent' ? 'axagent' : 'axgen';
     
     // Return AI instance and Agent parameters
     return {

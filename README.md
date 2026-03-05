@@ -50,7 +50,7 @@ const config = {
   crew: [{
     name: "Planner",
     description: "Creates a plan to complete a task",
-    executionMode: "axagent", // "axagent" | "axgen"
+    executionMode: "axgen", // "axagent" | "axgen"
     signature: "task:string \"a task to be completed\" -> plan:string \"a plan to execute the task\"",
     provider: "google-gemini",
     providerKeyName: "GEMINI_API_KEY",
@@ -127,7 +127,7 @@ Key TypeScript features:
 - **Functions (tools)**: Register callable functions via a registry and reference by name in agent `functions`.
 - **State**: `crew.state.set/get/getAll()` shared across all agents.
 - **Persona**: Use `definition` (preferred) or `prompt` to set the system program. If both are present, `definition` wins.
-- **Execution mode**: Set `executionMode` to `axagent` (default) or `axgen` per agent.
+- **Execution mode**: Set `executionMode` to `axgen` (default) or `axagent` per agent.
 - **Streaming**: Use `streamingForward()` for token streams.
 - **Metrics**: Per‑agent `getMetrics()` + crew‑level `getCrewMetrics()` snapshots.
 
@@ -190,8 +190,8 @@ Add either field to any agent config. The chosen value becomes the Ax agent's un
 
 Each agent can run in one of two execution modes supported by AxLLM:
 
-- `axagent` (default): Uses AxAgent capabilities.
-- `axgen`: Uses AxGen capabilities.
+- `axgen` (default): Uses AxGen capabilities.
+- `axagent`: Uses AxAgent capabilities.
 
 Set mode in config:
 

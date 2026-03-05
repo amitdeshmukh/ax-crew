@@ -161,7 +161,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     this.axai = ai;
     this.agentName = options.name;
     this.agentDefinition = effectiveDefinition;
-    this.executionMode = options.executionMode ?? "axagent";
+    this.executionMode = options.executionMode ?? "axgen";
     this.debugEnabled = debug ?? false;
     this.axGenProgram = new AxGen(options.signature as any, {
       description: effectiveDefinition,
