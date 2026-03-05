@@ -1,5 +1,11 @@
 # Changelog
 
+## [8.4.0] - 2026-03-05
+
+### Added
+- Optional `tools` allowlist on MCP server configs (stdio, HTTP SSE, streamable HTTP). When specified, only the listed tools are exposed to the agent, keeping system prompts small when connecting to MCP servers with many tools. Tested with GraphJin (40+ tools): filtering to 8 reduced token usage from 43K to 14K per request.
+- `examples/run-crew-workflow.ts` — workflow-aware agent using GraphJin MCP with tool filtering.
+
 ## [8.3.0] - 2026-03-05
 
 ### Fixed
