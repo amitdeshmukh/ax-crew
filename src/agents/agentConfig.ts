@@ -77,10 +77,17 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
       initializedClients.push(mcpClient);
       // Normalize MCP tool schemas: some MCP servers omit `parameters` for
       // zero-arg tools, but providers like Gemini require a valid schema.
-      const mcpFns = mcpClient.toFunction().map(fn => ({
+      let mcpFns = mcpClient.toFunction().map(fn => ({
         ...fn,
         parameters: fn.parameters ?? { type: 'object' as const, properties: {} },
       }));
+
+      // Filter to allowlisted tools if specified
+      if (mcpServerConfig.tools && mcpServerConfig.tools.length > 0) {
+        const allowed = new Set(mcpServerConfig.tools);
+        mcpFns = mcpFns.filter(fn => allowed.has(fn.name));
+      }
+
       functions.push(...mcpFns);
     }
     

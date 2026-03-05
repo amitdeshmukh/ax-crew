@@ -127,26 +127,31 @@ interface MCPStdioTransportConfig {
   command: string
   args?: string[]
   env?: NodeJS.ProcessEnv
+  tools?: string[]
 }
 
 /**
  * Config for an HTTP SSE MCP server.
- * 
+ *
  * @property {string} sseUrl - The SSE URL for the MCP server.
+ * @property {string[]} tools - Optional allowlist of tool names to expose to the agent.
  */
 interface MCPHTTPSSETransportConfig {
   sseUrl: string
+  tools?: string[]
 }
 
 /**
  * Config for a streamable HTTP MCP server.
- * 
+ *
  * @property {string} mcpEndpoint - The HTTP endpoint URL for the MCP server.
  * @property {AxMCPStreamableHTTPTransportOptions} options - Optional transport options.
+ * @property {string[]} tools - Optional allowlist of tool names to expose to the agent.
  */
 interface MCPStreamableHTTPTransportConfig {
   mcpEndpoint: string
   options?: AxMCPStreamableHTTPTransportOptions
+  tools?: string[]
 }
 
 /**
