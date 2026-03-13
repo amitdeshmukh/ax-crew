@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { AxAgent, AxAI, AxGen } from "@ax-llm/ax";
+import { AxAgent, AxAI, AxGen, AxSignature as AxSignatureClass } from "@ax-llm/ax";
 
 import type {
   AxSignature,
@@ -698,6 +698,94 @@ class StatefulAxAgent extends AxAgent<any, any> {
 }
 
 /**
+ * Lightweight proxy that stands in for a real agent in the crew's agent map.
+ * It exposes the same `getFunction()` interface (built from the crew config)
+ * but defers the expensive `createAgent()` call — and therefore MCP server
+ * startup — until the Manager actually delegates to it.
+ *
+ * Usage: `crew.addLazyAgent("CreateChart")` instead of `crew.addAgent("CreateChart")`
+ */
+class LazyStatefulAxAgent {
+  private realAgent: StatefulAxAgent | null = null;
+  private crewRef: any; // AxCrew — forward-declared to avoid circular ref
+  private agentName: string;
+  private description: string;
+  private signatureStr: string;
+  private func: AxFunction;
+  private _id: string = "lazy";
+
+  constructor(crewRef: any, agentName: string, crewConfig: AxCrewConfig) {
+    this.crewRef = crewRef;
+    this.agentName = agentName;
+
+    const agentDef = parseCrewConfig(crewConfig).crew.find(
+      (a) => a.name === agentName
+    );
+    if (!agentDef) {
+      throw new Error(`Agent "${agentName}" not found in crew config`);
+    }
+
+    this.description = agentDef.description;
+    this.signatureStr = agentDef.signature as string;
+
+    // Build the tool schema from the signature's input fields
+    const sig = new AxSignatureClass(this.signatureStr);
+    const parameters = sig.toInputJSONSchema();
+
+    this.func = {
+      name: agentName.replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase(),
+      description: this.description,
+      parameters,
+      func: async (args?: any) => {
+        const agent = await this.resolve();
+        return agent.forward(args);
+      },
+    };
+  }
+
+  private async resolve(): Promise<StatefulAxAgent> {
+    if (!this.realAgent) {
+      const agent = await this.crewRef.createAgent(this.agentName) as StatefulAxAgent;
+      agent.setId(this._id);
+      this.realAgent = agent;
+    }
+    return this.realAgent!;
+  }
+
+  // AxAgentic interface
+  getFunction(): AxFunction {
+    return this.func;
+  }
+
+  getSignature() {
+    return new AxSignatureClass(this.signatureStr);
+  }
+
+  // AxProgrammable / AxTunable stubs
+  getId(): string { return this._id; }
+  setId(id: string): void { this._id = id; }
+  getTraces(): any[] { return this.realAgent?.getTraces() ?? []; }
+  setDemos(): void { /* no-op until resolved */ }
+  getUsage(): any[] { return this.realAgent?.getUsage() ?? []; }
+  resetUsage(): void { this.realAgent?.resetUsage(); }
+
+  // Forward / streaming — resolve on demand
+  async forward(...args: any[]): Promise<any> {
+    const agent = await this.resolve();
+    return (agent as any).forward(...args);
+  }
+  streamingForward(...args: any[]): any {
+    // Must be sync to match the interface, so we wrap in an async generator
+    const self = this;
+    async function* lazyStream() {
+      const agent = await self.resolve();
+      yield* (agent as any).streamingForward(...args);
+    }
+    return lazyStream();
+  }
+}
+
+/**
  * AxCrew orchestrates a set of Ax agents that share state,
  * tools (functions), optional MCP servers, streaming, and a built-in metrics
  * registry for tokens, requests, and estimated cost.
@@ -909,6 +997,29 @@ class AxCrew {
     } catch (error) {
       console.error(`Failed to create agent '${agentName}':`);
       throw new Error(`Failed to add agent ${agentName}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Adds a lazy agent to the crew by name.
+   * The agent's tool schema is built immediately from the crew config,
+   * but the expensive initialization (MCP servers, AI client, etc.) is
+   * deferred until the Manager actually delegates to this agent.
+   *
+   * Use this for sub-agents that may not be needed on every request
+   * (e.g., agents with stdio MCP servers that spawn a process).
+   *
+   * @param {string} agentName - The name of the agent to add lazily.
+   */
+  addLazyAgent(agentName: string): void {
+    if (!this.agents) {
+      this.agents = new Map<string, StatefulAxAgent>();
+    }
+    if (!this.agents.has(agentName)) {
+      this.agents.set(
+        agentName,
+        new LazyStatefulAxAgent(this, agentName, this.crewConfig) as any
+      );
     }
   }
 
@@ -1166,5 +1277,5 @@ class AxCrew {
   }
 }
 
-export { AxCrew };
+export { AxCrew, LazyStatefulAxAgent };
 export type { StatefulAxAgent };

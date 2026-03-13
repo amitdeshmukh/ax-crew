@@ -1,5 +1,10 @@
 # Changelog
 
+## [8.5.0] - 2026-03-13
+
+### Added
+- **Lazy agent initialization** via `crew.addLazyAgent(agentName)`. Builds the tool schema immediately from the crew config (name, description, signature) but defers expensive initialization (MCP server startup, AI client creation) until the Manager actually delegates to the agent. Ideal for sub-agents with stdio MCP servers that spawn a process on init — avoids the cold-start penalty on every request when the agent isn't needed.
+
 ## [8.4.0] - 2026-03-05
 
 ### Added
