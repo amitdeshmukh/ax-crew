@@ -1,5 +1,10 @@
 # Changelog
 
+## [8.6.0] - 2026-03-14
+
+### Added
+- Claude Code skill (`.claude/skills/ax-crew/SKILL.md`) providing comprehensive library guidance for LLMs. Covers agent configuration, sub-agents, shared state, MCP integration, ACE learning, streaming, metrics, execution modes, function registries, and common patterns.
+
 ## [8.5.0] - 2026-03-13
 
 ### Added
