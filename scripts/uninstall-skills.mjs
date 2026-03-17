@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Preuninstall script: removes ax-crew skill files from Claude Code and Codex directories.
+ * Preuninstall script: removes ax-crew skill files from the project directory.
  */
 
 import { existsSync, rmSync } from 'fs';
 import { join } from 'path';
-import { homedir } from 'os';
+
+const projectRoot = process.env.INIT_CWD || process.cwd();
 
 const targets = [
-  join(homedir(), '.claude', 'skills', 'ax-crew'),
-  join(homedir(), '.agents', 'skills', 'ax-crew'),
+  join(projectRoot, '.claude', 'skills', 'ax-crew'),
+  join(projectRoot, '.agents', 'skills', 'ax-crew'),
 ];
 
 for (const dir of targets) {
