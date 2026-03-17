@@ -8,22 +8,22 @@ AxCrew lets you define a team of AI agents in config and run them together with 
 
 ### Why AxCrew
 - **Config-first crews**: Declare agents once; instantiate on demand.
+- **ACE Learning**: Agents learn from human feedback with persistent playbooks.
+- **Sandboxed code execution**: AxJSRuntime with permission controls — data never leaves your environment.
 - **Shared state**: Simple key/value state all agents can read/write.
 - **Sub‑agents and tools**: Compose agents and functions cleanly.
-- **Streaming**: Real‑time token streaming for responsive UX.
 - **MCP**: Connect agents to MCP servers (STDIO, HTTP SSE, Streamable HTTP).
+- **Streaming**: Real‑time token streaming for responsive UX.
 - **Metrics & costs**: Per‑agent and crew snapshots, with estimated USD.
+- **Auto-installs Claude & Codex skills**: `npm install` installs 16 skill files that teach LLMs to build AxCrew agents.
 
 ### Install
-Install this package:
-```bash
-npm install @amitdeshmukh/ax-crew
-```
-AxLLM is a peer dependency, so you will need to install it separately. 
 
 ```bash
-npm install @ax-llm/ax @ax-llm/ax-tools
+npm install @amitdeshmukh/ax-crew @ax-llm/ax @ax-llm/ax-tools
 ```
+
+This also auto-installs 16 skill files for Claude Code (`~/.claude/skills/ax-crew/`) and Codex (`~/.agents/skills/ax-crew/`).
 
 Requirements: Node.js >= 21.
 

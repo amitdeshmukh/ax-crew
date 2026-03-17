@@ -1,5 +1,13 @@
 # Changelog
 
+## [8.7.0] - 2026-03-17
+
+### Added
+- **16 Claude Code & Codex skill files** in `src/skills/` — terse, code-first `.md` files covering the full AxCrew API: config, signatures, functions, state, sub-agents, streaming, MCP, metrics, execution modes, code execution, ACE, few-shot, providers, telemetry, and multi-agent patterns.
+- **Postinstall auto-install**: `npm install` copies skill files to `~/.claude/skills/ax-crew/` (individual `.md` files) and `~/.agents/skills/ax-crew/` (combined `SKILL.md` for Codex). Skills are auto-discovered by Claude Code and Codex — no manual setup needed.
+- **Preuninstall cleanup**: `npm uninstall` removes installed skill files.
+- MIT LICENSE file.
+
 ## [8.6.0] - 2026-03-14
 
 ### Added
