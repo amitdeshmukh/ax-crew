@@ -9,6 +9,8 @@
     "node": ">=21.0.0"
   },
   "scripts": {
+    "postinstall": "node scripts/install-skills.mjs",
+    "preuninstall": "node scripts/uninstall-skills.mjs",
     "build": "rm -rf dist && tsc --outDir dist",
     "release": "npm run build && npm publish --access public",
     "test": "vitest run",
