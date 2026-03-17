@@ -1,4 +1,4 @@
-![image](axcrew.png)
+![AxCrew](axcrew.webp)
 
 [![npm version](https://img.shields.io/npm/v/@amitdeshmukh/ax-crew.svg)](https://www.npmjs.com/package/@amitdeshmukh/ax-crew) [![npm downloads](https://img.shields.io/npm/dm/@amitdeshmukh/ax-crew.svg)](https://www.npmjs.com/package/@amitdeshmukh/ax-crew)
 
