@@ -1,6 +1,6 @@
 ---
-name: ax-crew-telemetry
-version: 8.7.2
+name: axcrew-telemetry
+version: 8.7.3
 description: "AxCrew telemetry: OpenTelemetry tracing, metrics, observability with tracer and meter injection."
 tags: [telemetry, opentelemetry, tracing, metrics, observability, tracer, meter]
 ---
@@ -148,6 +148,9 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Supporting files
+- See [examples/telemetry-demo.ts](examples/telemetry-demo.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT import OpenTelemetry types from `ax-crew` -- import them from `@opentelemetry/api` and the SDK packages.
@@ -157,5 +160,5 @@ main().catch(console.error);
 
 ## References
 
-- [telemetry-demo.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/telemetry-demo.ts)
+- [telemetry-demo.ts](examples/telemetry-demo.ts)
 - [OpenTelemetry JS](https://opentelemetry.io/docs/languages/js/)

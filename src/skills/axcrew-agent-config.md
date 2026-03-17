@@ -1,6 +1,6 @@
 ---
-name: ax-crew-agent-config
-version: 8.7.2
+name: axcrew-agent-config
+version: 8.7.3
 description: "AgentConfig - agent configuration: provider, signature, model, temperature, definition, prompt, executionMode, axAgentOptions, providerArgs"
 ---
 
@@ -167,6 +167,9 @@ DSPy-style string signatures with optional field descriptions:
 
 Supported types: `string`, `number`, `boolean`, `string[]`, `number[]`, etc.
 
+## Supporting files
+- See [examples/providerArgs.ts](examples/providerArgs.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT omit `name`, `description`, `signature`, `provider`, or `ai.model` -- all are required.
@@ -177,5 +180,5 @@ Supported types: `string`, `number`, `boolean`, `string[]`, `number[]`, etc.
 
 ## References
 
-- [basic-researcher-writer.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/basic-researcher-writer.ts)
-- [providerArgs.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/providerArgs.ts)
+- [basic-researcher-writer.ts](examples/basic-researcher-writer.ts)
+- [providerArgs.ts](examples/providerArgs.ts)

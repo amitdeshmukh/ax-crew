@@ -1,7 +1,7 @@
 ---
-name: ax-crew-signatures
+name: axcrew-signatures
 description: AxCrew DSPy-style signature format for defining agent inputs/outputs. Covers signature syntax, types (string, number, boolean, class, string[], json, image, audio, date), optional fields (?), field descriptions, and AxSignature builder alternative.
-version: "8.7.2"
+version: "8.7.3"
 ---
 
 # AxCrew Signatures
@@ -164,6 +164,6 @@ const config: AxCrewConfig = {
 
 ## References
 
-- [rlm-long-task.ts](../examples/rlm-long-task.ts) -- array output in signature
-- [rlm-shared-fields.ts](../examples/rlm-shared-fields.ts) -- field descriptions in quotes
-- [ace-customer-support.ts](../examples/ace-customer-support.ts) -- multi-output signature
+- [rlm-long-task.ts](examples/rlm-long-task.ts) -- array output in signature
+- [rlm-shared-fields.ts](examples/rlm-shared-fields.ts) -- field descriptions in quotes
+- [ace-customer-support.ts](examples/ace-customer-support.ts) -- multi-output signature

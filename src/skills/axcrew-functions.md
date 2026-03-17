@@ -1,6 +1,6 @@
 ---
-name: ax-crew-functions
-version: 8.7.2
+name: axcrew-functions
+version: 8.7.3
 description: "Functions and tools: FunctionRegistryType, AxFunction, toFunction, custom functions, AxCrewFunctions, class-based functions with state"
 ---
 
@@ -204,6 +204,9 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Supporting files
+- See [examples/write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT define functions inline in AgentConfig; always use a `FunctionRegistryType` registry passed to the `AxCrew` constructor.
@@ -213,6 +216,6 @@ main().catch(console.error);
 
 ## References
 
-- [write-post-and-publish-to-wordpress.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/write-post-and-publish-to-wordpress.ts)
-- [src/functions/dateTime.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/src/functions/dateTime.ts)
-- [src/functions/index.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/src/functions/index.ts)
+- [write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts)
+- [src/functions/dateTime.ts](src/functions/dateTime.ts)
+- [src/functions/index.ts](src/functions/index.ts)

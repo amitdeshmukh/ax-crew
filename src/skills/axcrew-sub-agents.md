@@ -1,7 +1,7 @@
 ---
-name: ax-crew-sub-agents
+name: axcrew-sub-agents
 description: AxCrew sub-agent composition via agents[] field. Covers agent delegation, dependency resolution, lazy agents (addLazyAgent), parent-child tool integration, and multi-agent orchestration patterns.
-version: "8.7.2"
+version: "8.7.3"
 ---
 
 # AxCrew Sub-Agents
@@ -189,6 +189,10 @@ crew.addLazyAgent("RarelyUsedAgent");
 
 The lazy agent exposes the same `getFunction()` interface. When the parent agent delegates to it, the real agent is created on-demand.
 
+## Supporting files
+- See [examples/basic-researcher-writer.ts](examples/basic-researcher-writer.ts) for simple delegation.
+- See [examples/rlm-shared-fields.ts](examples/rlm-shared-fields.ts) for multi-agent with shared fields.
+
 ## Do Not Generate
 
 - Do NOT list an agent in `agents[]` that is not defined in the crew config
@@ -199,5 +203,5 @@ The lazy agent exposes the same `getFunction()` interface. When the parent agent
 
 ## References
 
-- [basic-researcher-writer.ts](../examples/basic-researcher-writer.ts) -- simple delegation
-- [rlm-shared-fields.ts](../examples/rlm-shared-fields.ts) -- multi-agent with shared fields
+- [basic-researcher-writer.ts](examples/basic-researcher-writer.ts) -- simple delegation
+- [rlm-shared-fields.ts](examples/rlm-shared-fields.ts) -- multi-agent with shared fields

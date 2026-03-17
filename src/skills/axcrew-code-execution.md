@@ -1,7 +1,7 @@
 ---
-name: ax-crew-code-execution
+name: axcrew-code-execution
 description: AxCrew code execution with AxJSRuntime for sandboxed JavaScript execution. Covers AxJSRuntime setup, permissions, executionMode axagent, RLM mode, and runtime configuration for autonomous code generation and execution.
-version: "8.7.2"
+version: "8.7.3"
 ---
 
 # AxCrew Code Execution
@@ -152,6 +152,9 @@ const config: AxCrewConfig = {
 };
 ```
 
+## Supporting files
+- See [examples/rlm-long-task.ts](examples/rlm-long-task.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT use `executionMode: "axgen"` with `runtime` -- code execution requires `"axagent"` mode
@@ -162,5 +165,5 @@ const config: AxCrewConfig = {
 
 ## References
 
-- [rlm-long-task.ts](../examples/rlm-long-task.ts) -- full RLM agent with context management
-- [rlm-shared-fields.ts](../examples/rlm-shared-fields.ts) -- shared runtime across sub-agents
+- [rlm-long-task.ts](examples/rlm-long-task.ts) -- full RLM agent with context management
+- [rlm-shared-fields.ts](examples/rlm-shared-fields.ts) -- shared runtime across sub-agents

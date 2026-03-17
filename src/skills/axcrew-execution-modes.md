@@ -1,6 +1,6 @@
 ---
-name: ax-crew-execution-modes
-version: "8.7.2"
+name: axcrew-execution-modes
+version: "8.7.3"
 description: "ax-crew execution modes: execution mode, axgen, axagent, RLM, runtime, contextFields, AxJSRuntime, contextManagement, fields, shared, globallyShared, excluded, maxTurns, maxSubAgentCalls"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob
@@ -270,6 +270,10 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Supporting files
+- See [examples/rlm-long-task.ts](examples/rlm-long-task.ts) for a complete runnable example.
+- See [examples/rlm-shared-fields.ts](examples/rlm-shared-fields.ts) for shared fields between agents.
+
 ## Do Not Generate
 
 - Do NOT use `axAgentOptions` without setting `executionMode: "axagent"` -- it is ignored in `axgen` mode.
@@ -281,7 +285,7 @@ main().catch(console.error);
 
 ## References
 
-- [rlm-long-task.ts example](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/rlm-long-task.ts)
-- [rlm-shared-fields.ts example](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/rlm-shared-fields.ts)
-- [Source: AxCrewAxAgentOptions type](https://github.com/amitdeshmukh/ax-crew/blob/main/src/types.ts)
-- [Source: StatefulAxAgent execution mode handling](https://github.com/amitdeshmukh/ax-crew/blob/main/src/agents/index.ts)
+- [rlm-long-task.ts](examples/rlm-long-task.ts)
+- [rlm-shared-fields.ts](examples/rlm-shared-fields.ts)
+- [Source: AxCrewAxAgentOptions type](src/types.ts)
+- [Source: StatefulAxAgent execution mode handling](src/agents/index.ts)

@@ -13,7 +13,7 @@ const projectRoot = process.env.INIT_CWD || process.cwd();
 const claudeSkillsDir = join(projectRoot, '.claude', 'skills');
 if (existsSync(claudeSkillsDir)) {
   for (const dir of readdirSync(claudeSkillsDir)) {
-    if (dir.startsWith('ax-crew')) {
+    if (dir.startsWith('axcrew')) {
       try {
         rmSync(join(claudeSkillsDir, dir), { recursive: true });
       } catch {}

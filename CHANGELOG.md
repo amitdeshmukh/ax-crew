@@ -1,5 +1,15 @@
 # Changelog
 
+## [8.7.3] - 2026-03-17
+
+### Added
+- **Supporting example files** bundled with each skill. The postinstall script now copies relevant example `.ts` files into each skill's `examples/` directory. Claude Code can load these on demand for complete runnable references.
+- SKILL.md files now reference local `examples/` paths instead of GitHub URLs, enabling Claude to read examples directly.
+
+### Changed
+- Renamed all skill files from `ax-crew-*` to `axcrew-*` (e.g., `axcrew-ace.md`, `axcrew-mcp.md`). Skill directory names in `.claude/skills/` updated accordingly.
+- Updated version in all skill frontmatter to `8.7.3`.
+
 ## [8.7.2] - 2026-03-17
 
 ### Fixed

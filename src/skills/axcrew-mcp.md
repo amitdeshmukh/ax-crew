@@ -1,6 +1,6 @@
 ---
-name: ax-crew-mcp
-version: "8.7.2"
+name: axcrew-mcp
+version: "8.7.3"
 description: "ax-crew MCP integration: MCP, Model Context Protocol, STDIO, HTTP SSE, Streamable HTTP, mcpServers, tools, tool filtering, multiple servers"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob
@@ -205,6 +205,10 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Supporting files
+- See [examples/mcp-agent.ts](examples/mcp-agent.ts) for a complete runnable example.
+- See [examples/graphjin-database-agent.ts](examples/graphjin-database-agent.ts) for Streamable HTTP transport.
+
 ## Do Not Generate
 
 - Do NOT mix transport config keys -- use exactly one of `command`, `sseUrl`, or `mcpEndpoint` per server entry.
@@ -215,7 +219,7 @@ main().catch(console.error);
 
 ## References
 
-- [mcp-agent.ts example](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/mcp-agent.ts)
-- [graphjin-database-agent.ts example](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/graphjin-database-agent.ts)
-- [Source: agentConfig.ts (initializeMCPServers)](https://github.com/amitdeshmukh/ax-crew/blob/main/src/agents/agentConfig.ts)
-- [Types: MCPStdioTransportConfig, MCPHTTPSSETransportConfig, MCPStreamableHTTPTransportConfig](https://github.com/amitdeshmukh/ax-crew/blob/main/src/types.ts)
+- [mcp-agent.ts](examples/mcp-agent.ts)
+- [graphjin-database-agent.ts](examples/graphjin-database-agent.ts)
+- [Source: agentConfig.ts (initializeMCPServers)](src/agents/agentConfig.ts)
+- [Types: MCPStdioTransportConfig, MCPHTTPSSETransportConfig, MCPStreamableHTTPTransportConfig](src/types.ts)

@@ -1,6 +1,6 @@
 ---
-name: ax-crew-providers
-version: 8.7.2
+name: axcrew-providers
+version: 8.7.3
 description: "AxCrew provider configuration: openai, anthropic, google-gemini, azure-openai, groq, ollama, mistral, cohere, grok/xAI, perplexity, and model setup."
 tags: [provider, openai, anthropic, google-gemini, azure, groq, ollama, mistral, cohere, model, grok, perplexity]
 ---
@@ -187,6 +187,11 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Supporting files
+- See [examples/providerArgs.ts](examples/providerArgs.ts) for Azure OpenAI configuration.
+- See [examples/search-tweets.ts](examples/search-tweets.ts) for Grok/xAI usage.
+- See [examples/perplexityDeepSearch.ts](examples/perplexityDeepSearch.ts) for Perplexity MCP integration.
+
 ## Do Not Generate
 
 - Do NOT hardcode API keys in config -- always use `providerKeyName` which reads from `process.env`.
@@ -197,8 +202,8 @@ main().catch(console.error);
 
 ## References
 
-- [providerArgs.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/providerArgs.ts) (Azure OpenAI)
-- [search-tweets.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/search-tweets.ts) (Grok/xAI)
-- [perplexityDeepSearch.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/perplexityDeepSearch.ts) (Perplexity MCP)
-- [write-post-and-publish-to-wordpress.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/write-post-and-publish-to-wordpress.ts) (mixed providers)
-- [src/agents/compose.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/src/agents/compose.ts)
+- [providerArgs.ts](examples/providerArgs.ts) (Azure OpenAI)
+- [search-tweets.ts](examples/search-tweets.ts) (Grok/xAI)
+- [perplexityDeepSearch.ts](examples/perplexityDeepSearch.ts) (Perplexity MCP)
+- [write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts) (mixed providers)
+- [src/agents/compose.ts](src/agents/compose.ts)

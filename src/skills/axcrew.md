@@ -1,6 +1,6 @@
 ---
-name: ax-crew
-version: 8.7.2
+name: axcrew
+version: 8.7.3
 description: "AxCrew - multi-agent orchestration: crew, agents, addAgent, addAllAgents, addAgentsToCrew, forward, streaming, sub-agents"
 ---
 
@@ -109,6 +109,9 @@ new AxCrew(crewConfig: AxCrewConfig, functionsRegistry?: FunctionRegistryType, o
 - `ax-crew-functions` -- Function registry, custom tools, class-based functions
 - `ax-crew-state` -- Shared state API, accessing state from functions
 
+## Supporting files
+- See [examples/basic-researcher-writer.ts](examples/basic-researcher-writer.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT instantiate `AxAgent` or `AxGen` directly; use `AxCrew` which wraps them as `StatefulAxAgent`.
@@ -119,6 +122,6 @@ new AxCrew(crewConfig: AxCrewConfig, functionsRegistry?: FunctionRegistryType, o
 
 ## References
 
-- [basic-researcher-writer.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/basic-researcher-writer.ts)
-- [write-post-and-publish-to-wordpress.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/write-post-and-publish-to-wordpress.ts)
-- [providerArgs.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/providerArgs.ts)
+- [basic-researcher-writer.ts](examples/basic-researcher-writer.ts)
+- [write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts)
+- [providerArgs.ts](examples/providerArgs.ts)

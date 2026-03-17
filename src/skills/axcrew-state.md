@@ -1,6 +1,6 @@
 ---
-name: ax-crew-state
-version: 8.7.2
+name: axcrew-state
+version: 8.7.3
 description: "State management: shared state, StateInstance, set, get, getAll, reset, accessing state from class-based functions"
 ---
 
@@ -154,6 +154,9 @@ const agent = crew.agents?.get("myAgent");
 // agent.state is the same StateInstance as crew.state
 ```
 
+## Supporting files
+- See [examples/write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT assume state values exist without checking; always use optional chaining (e.g. `this.state.env?.KEY`).
@@ -163,6 +166,6 @@ const agent = crew.agents?.get("myAgent");
 
 ## References
 
-- [write-post-and-publish-to-wordpress.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/write-post-and-publish-to-wordpress.ts)
-- [src/state/index.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/src/state/index.ts)
-- [src/types.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/src/types.ts)
+- [write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts)
+- [src/state/index.ts](src/state/index.ts)
+- [src/types.ts](src/types.ts)

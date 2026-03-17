@@ -1,6 +1,6 @@
 ---
-name: ax-crew-metrics
-version: "8.7.2"
+name: axcrew-metrics
+version: "8.7.3"
 description: "ax-crew metrics and cost tracking: metrics, cost, tracking, getMetrics, getCrewMetrics, MetricsSnapshot, usage, tokens, estimatedCostUSD, resetCosts, resetCrewMetrics"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob
@@ -154,6 +154,9 @@ if (m?.functions?.details) {
 }
 ```
 
+## Supporting files
+- See [examples/basic-researcher-writer.ts](examples/basic-researcher-writer.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT call `getMetrics()` on the crew object -- use `crew.getCrewMetrics()` for crew-level and `agent.getMetrics()` for per-agent.
@@ -164,7 +167,7 @@ if (m?.functions?.details) {
 
 ## References
 
-- [basic-researcher-writer.ts example](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/basic-researcher-writer.ts)
-- [rlm-long-task.ts example](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/rlm-long-task.ts)
-- [Source: MetricsSnapshot type](https://github.com/amitdeshmukh/ax-crew/blob/main/src/metrics/types.ts)
-- [Source: MetricsRegistry](https://github.com/amitdeshmukh/ax-crew/blob/main/src/metrics/registry.ts)
+- [basic-researcher-writer.ts](examples/basic-researcher-writer.ts)
+- [rlm-long-task.ts](examples/rlm-long-task.ts)
+- [Source: MetricsSnapshot type](src/metrics/types.ts)
+- [Source: MetricsRegistry](src/metrics/registry.ts)

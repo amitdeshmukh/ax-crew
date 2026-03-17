@@ -1,7 +1,7 @@
 ---
-name: ax-crew-few-shot
+name: axcrew-few-shot
 description: AxCrew few-shot examples via examples[] field in AgentConfig. Covers in-context learning, demonstration structure, input/output field matching, setExamplesCompat() for dynamic updates, and when to use examples vs definition/prompt.
-version: "8.7.2"
+version: "8.7.3"
 ---
 
 # AxCrew Few-Shot Examples
@@ -151,6 +151,9 @@ const agent = crew.agents?.get("SupportAgent");
 
 Best practice: use `definition`/`prompt` for WHO the agent is, `examples[]` for HOW it should respond.
 
+## Supporting files
+- See [examples/solve-math-problem.ts](examples/solve-math-problem.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT embed examples as text in `definition` or `prompt` -- use the `examples[]` field for structured few-shot learning
@@ -161,5 +164,6 @@ Best practice: use `definition`/`prompt` for WHO the agent is, `examples[]` for 
 
 ## References
 
-- [ace-customer-support.ts](../examples/ace-customer-support.ts) -- agent with structured examples and ACE feedback
-- [basic-researcher-writer.ts](../examples/basic-researcher-writer.ts) -- simple agent config
+- [solve-math-problem.ts](examples/solve-math-problem.ts) -- agent with few-shot examples
+- [ace-customer-support.ts](examples/ace-customer-support.ts) -- agent with structured examples and ACE feedback
+- [basic-researcher-writer.ts](examples/basic-researcher-writer.ts) -- simple agent config

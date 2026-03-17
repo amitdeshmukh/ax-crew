@@ -1,6 +1,6 @@
 ---
-name: ax-crew-patterns
-version: 8.7.2
+name: axcrew-patterns
+version: 8.7.3
 description: "AxCrew multi-agent patterns: pipeline, delegation, fan-out, orchestrator, sequential workflows, and agent coordination."
 tags: [patterns, workflow, pipeline, multi-agent, orchestrator, delegation, sequential, fan-out]
 ---
@@ -271,6 +271,10 @@ class MyTool {
 }
 ```
 
+## Supporting files
+- See [examples/write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts) for a complete pipeline example.
+- See [examples/solve-math-problem.ts](examples/solve-math-problem.ts) for a delegation example.
+
 ## Do Not Generate
 
 - Do NOT add a parent agent before its sub-agents -- `addAgentsToCrew` resolves dependencies but `addAgent` does not.
@@ -281,6 +285,6 @@ class MyTool {
 
 ## References
 
-- [write-post-and-publish-to-wordpress.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/write-post-and-publish-to-wordpress.ts) (4-agent pipeline)
-- [solve-math-problem.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/solve-math-problem.ts) (delegation)
-- [search-tweets.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/search-tweets.ts) (streaming)
+- [write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts) (4-agent pipeline)
+- [solve-math-problem.ts](examples/solve-math-problem.ts) (delegation)
+- [search-tweets.ts](examples/search-tweets.ts) (streaming)

@@ -1,6 +1,6 @@
 ---
-name: ax-crew-streaming
-version: "8.7.2"
+name: axcrew-streaming
+version: "8.7.3"
 description: "ax-crew streaming patterns: streaming, streamingForward, stream, delta, real-time, chunks, async generator consumption"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob
@@ -129,6 +129,9 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Supporting files
+- See [examples/streaming.ts](examples/streaming.ts) for a complete runnable example.
+
 ## Do Not Generate
 
 - Do NOT `await` the return of `streamingForward()` -- it returns the async generator directly, not a promise.
@@ -139,5 +142,5 @@ main().catch(console.error);
 
 ## References
 
-- [streaming.ts example](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/streaming.ts)
-- [Source: StatefulAxAgent.streamingForward](https://github.com/amitdeshmukh/ax-crew/blob/main/src/agents/index.ts)
+- [streaming.ts](examples/streaming.ts)
+- [Source: StatefulAxAgent.streamingForward](src/agents/index.ts)

@@ -1,6 +1,6 @@
 ---
-name: ax-crew-ace
-version: 8.7.2
+name: axcrew-ace
+version: 8.7.3
 description: "ACE (Agentic Context Engineering) for AxCrew: feedback loops, online learning, playbook persistence, and optimization."
 tags: [ace, agentic-context-engineering, feedback, learning, playbook, online-update, optimize]
 ---
@@ -150,6 +150,10 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Supporting files
+- See [examples/ace-customer-support.ts](examples/ace-customer-support.ts) for a complete runnable example.
+- See [examples/ace-flight-finder.ts](examples/ace-flight-finder.ts) for another ACE example.
+
 ## Do Not Generate
 
 - Do NOT call `initACE()` manually -- it is called automatically when `addAgent()` / `addAgentsToCrew()` detects an `ace` config on the agent.
@@ -160,6 +164,7 @@ main().catch(console.error);
 
 ## References
 
-- [ace-customer-support.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/examples/ace-customer-support.ts)
-- [src/agents/ace.ts](https://github.com/amitdeshmukh/ax-crew/blob/main/src/agents/ace.ts)
+- [ace-customer-support.ts](examples/ace-customer-support.ts)
+- [ace-flight-finder.ts](examples/ace-flight-finder.ts)
+- [src/agents/ace.ts](src/agents/ace.ts)
 - [AxACE upstream docs](https://axllm.dev/ace/)
