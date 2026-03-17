@@ -1,6 +1,6 @@
 ---
 name: ax-crew-metrics
-version: "__VERSION__"
+version: "8.7.2"
 description: "ax-crew metrics and cost tracking: metrics, cost, tracking, getMetrics, getCrewMetrics, MetricsSnapshot, usage, tokens, estimatedCostUSD, resetCosts, resetCrewMetrics"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob

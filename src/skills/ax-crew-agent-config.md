@@ -1,6 +1,6 @@
 ---
 name: ax-crew-agent-config
-version: __VERSION__
+version: 8.7.2
 description: "AgentConfig - agent configuration: provider, signature, model, temperature, definition, prompt, executionMode, axAgentOptions, providerArgs"
 ---
 

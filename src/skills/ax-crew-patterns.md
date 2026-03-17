@@ -1,6 +1,6 @@
 ---
 name: ax-crew-patterns
-version: __VERSION__
+version: 8.7.2
 description: "AxCrew multi-agent patterns: pipeline, delegation, fan-out, orchestrator, sequential workflows, and agent coordination."
 tags: [patterns, workflow, pipeline, multi-agent, orchestrator, delegation, sequential, fan-out]
 ---

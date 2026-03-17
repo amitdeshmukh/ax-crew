@@ -1,6 +1,6 @@
 ---
 name: ax-crew
-version: __VERSION__
+version: 8.7.2
 description: "AxCrew - multi-agent orchestration: crew, agents, addAgent, addAllAgents, addAgentsToCrew, forward, streaming, sub-agents"
 ---
 

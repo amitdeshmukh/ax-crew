@@ -1,6 +1,6 @@
 ---
 name: ax-crew-ace
-version: __VERSION__
+version: 8.7.2
 description: "ACE (Agentic Context Engineering) for AxCrew: feedback loops, online learning, playbook persistence, and optimization."
 tags: [ace, agentic-context-engineering, feedback, learning, playbook, online-update, optimize]
 ---

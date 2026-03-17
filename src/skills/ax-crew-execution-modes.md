@@ -1,6 +1,6 @@
 ---
 name: ax-crew-execution-modes
-version: "__VERSION__"
+version: "8.7.2"
 description: "ax-crew execution modes: execution mode, axgen, axagent, RLM, runtime, contextFields, AxJSRuntime, contextManagement, fields, shared, globallyShared, excluded, maxTurns, maxSubAgentCalls"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob

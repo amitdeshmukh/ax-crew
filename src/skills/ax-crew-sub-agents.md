@@ -1,7 +1,7 @@
 ---
 name: ax-crew-sub-agents
 description: AxCrew sub-agent composition via agents[] field. Covers agent delegation, dependency resolution, lazy agents (addLazyAgent), parent-child tool integration, and multi-agent orchestration patterns.
-version: "__VERSION__"
+version: "8.7.2"
 ---
 
 # AxCrew Sub-Agents

@@ -1,7 +1,7 @@
 ---
 name: ax-crew-few-shot
 description: AxCrew few-shot examples via examples[] field in AgentConfig. Covers in-context learning, demonstration structure, input/output field matching, setExamplesCompat() for dynamic updates, and when to use examples vs definition/prompt.
-version: "__VERSION__"
+version: "8.7.2"
 ---
 
 # AxCrew Few-Shot Examples

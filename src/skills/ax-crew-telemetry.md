@@ -1,6 +1,6 @@
 ---
 name: ax-crew-telemetry
-version: __VERSION__
+version: 8.7.2
 description: "AxCrew telemetry: OpenTelemetry tracing, metrics, observability with tracer and meter injection."
 tags: [telemetry, opentelemetry, tracing, metrics, observability, tracer, meter]
 ---

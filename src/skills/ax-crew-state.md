@@ -1,6 +1,6 @@
 ---
 name: ax-crew-state
-version: __VERSION__
+version: 8.7.2
 description: "State management: shared state, StateInstance, set, get, getAll, reset, accessing state from class-based functions"
 ---
 

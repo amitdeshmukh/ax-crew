@@ -1,7 +1,7 @@
 ---
 name: ax-crew-signatures
 description: AxCrew DSPy-style signature format for defining agent inputs/outputs. Covers signature syntax, types (string, number, boolean, class, string[], json, image, audio, date), optional fields (?), field descriptions, and AxSignature builder alternative.
-version: "__VERSION__"
+version: "8.7.2"
 ---
 
 # AxCrew Signatures

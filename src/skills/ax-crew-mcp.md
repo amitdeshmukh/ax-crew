@@ -1,6 +1,6 @@
 ---
 name: ax-crew-mcp
-version: "__VERSION__"
+version: "8.7.2"
 description: "ax-crew MCP integration: MCP, Model Context Protocol, STDIO, HTTP SSE, Streamable HTTP, mcpServers, tools, tool filtering, multiple servers"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob

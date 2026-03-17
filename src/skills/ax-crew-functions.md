@@ -1,6 +1,6 @@
 ---
 name: ax-crew-functions
-version: __VERSION__
+version: 8.7.2
 description: "Functions and tools: FunctionRegistryType, AxFunction, toFunction, custom functions, AxCrewFunctions, class-based functions with state"
 ---
 

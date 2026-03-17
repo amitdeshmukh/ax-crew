@@ -1,6 +1,6 @@
 ---
 name: ax-crew-providers
-version: __VERSION__
+version: 8.7.2
 description: "AxCrew provider configuration: openai, anthropic, google-gemini, azure-openai, groq, ollama, mistral, cohere, grok/xAI, perplexity, and model setup."
 tags: [provider, openai, anthropic, google-gemini, azure, groq, ollama, mistral, cohere, model, grok, perplexity]
 ---

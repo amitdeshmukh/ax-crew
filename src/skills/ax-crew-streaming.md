@@ -1,6 +1,6 @@
 ---
 name: ax-crew-streaming
-version: "__VERSION__"
+version: "8.7.2"
 description: "ax-crew streaming patterns: streaming, streamingForward, stream, delta, real-time, chunks, async generator consumption"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob

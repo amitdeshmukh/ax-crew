@@ -1,7 +1,7 @@
 ---
 name: ax-crew-code-execution
 description: AxCrew code execution with AxJSRuntime for sandboxed JavaScript execution. Covers AxJSRuntime setup, permissions, executionMode axagent, RLM mode, and runtime configuration for autonomous code generation and execution.
-version: "__VERSION__"
+version: "8.7.2"
 ---
 
 # AxCrew Code Execution
