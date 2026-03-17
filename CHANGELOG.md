@@ -1,5 +1,10 @@
 # Changelog
 
+## [8.7.2] - 2026-03-17
+
+### Fixed
+- Skill install now creates proper directory structure for Claude Code discovery. Each skill gets its own directory with a `SKILL.md` file (e.g., `.claude/skills/ax-crew/SKILL.md`, `.claude/skills/ax-crew-ace/SKILL.md`). Previously installed loose `.md` files in a single directory which Claude Code couldn't discover.
+
 ## [8.7.1] - 2026-03-17
 
 ### Fixed
