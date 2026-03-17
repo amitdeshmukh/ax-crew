@@ -1,5 +1,10 @@
 # Changelog
 
+## [8.7.1] - 2026-03-17
+
+### Fixed
+- Skill postinstall now installs to the **project directory** (`.claude/skills/ax-crew/`, `.agents/skills/ax-crew/`) instead of the home directory. Skills are scoped to projects that use ax-crew.
+
 ## [8.7.0] - 2026-03-17
 
 ### Added
