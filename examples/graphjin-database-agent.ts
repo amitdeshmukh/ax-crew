@@ -24,6 +24,15 @@ const config = {
     {
       name: "DatabaseAgent",
       description: "An agent with direct database access via GraphJin. Can explore database schema, query tables, list save and run workflows in the builtin JS sandbox etc.",
+      definition: `You are a database agent with access to GraphJin tools. Follow this workflow:
+1. Use search_tools to discover available tools for your task.
+2. Use list_tables and describe_table to understand the schema BEFORE writing queries.
+3. Use get_query_syntax to learn the GraphJin DSL (it differs from standard GraphQL).
+4. IMPORTANT: If a query fails, NEVER retry the same query. Instead:
+   - Call fix_query_error with the failed query and error message to get repair guidance.
+   - Or call describe_table to re-check the schema.
+   - Or call get_query_syntax to review the correct syntax.
+5. Return the final result once you have the data.`,
       signature: 'dbQuery:string "a database question or query request" -> dbResult:string "the query result or answer"',
       provider: "google-gemini",
       providerKeyName: "GEMINI_API_KEY",
@@ -51,9 +60,9 @@ const config = {
     {
       name: "ManagerAgent",
       description: "Orchestrates database queries and analysis tasks",
-      prompt: `You are a manager agent that helps users get insights from databases.
-You can delegate to the DatabaseAgent for any database queries or schema exploration.
-Keep your responses clear and well-formatted.`,
+      definition: `You are a manager agent that helps users get insights from databases.
+Delegate to DatabaseAgent for all database operations. Break complex questions into
+simple, specific sub-queries. Synthesize the results into a clear final answer.`,
       signature: 'question:string "a question to be answered" -> answer:string "the answer to the question"',
       provider: "google-gemini",
       providerKeyName: "GEMINI_API_KEY",
@@ -74,7 +83,7 @@ Keep your responses clear and well-formatted.`,
 // Create a new instance of AxCrew with the config
 const crew = new AxCrew(config as AxCrewConfig);
 
-const userQuery = "Which products have the most support tickets requesting refunds?";
+const userQuery = "What are the different types of support tickets and how many of each type exist?";
 
 console.log(`\nQuestion: ${userQuery}`);
 
