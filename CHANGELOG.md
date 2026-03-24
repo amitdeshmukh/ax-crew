@@ -1,5 +1,29 @@
 # Changelog
 
+## [9.0.0] - 2026-03-24
+
+### Breaking Changes
+- **`crew.state` renamed to `crew.crewState`**: The shared state property on `AxCrew` and `StatefulAxAgent` is now `crewState` instead of `state`. This avoids a conflict with ax-llm's new `private state: AxAgentState` on `AxAgent`. Update all `crew.state.set/get/getAll/reset` calls to `crew.crewState.set/get/getAll/reset`. Class-based function constructors still receive `state: Record<string, any>` (unchanged).
+
+### Added
+- **Deferred tool loading**: When an agent has many MCP tools (20+), only core tools + a `search_tools` meta-function are sent to the LLM. The LLM discovers and activates deferred tools on demand via `search_tools`. Configurable via `deferredTools` on agent config:
+  - `enabled`: force on/off (default: auto when tool count exceeds threshold)
+  - `threshold`: tool count to activate (default: 20)
+  - `maxSearchResults`: max tools per search (default: 10)
+  - `coreTools`: tool names to always keep active
+- **Fully local tool search**: Multi-signal scoring with tokenization, synonym expansion, bigram overlap, and parameter name matching. Zero API calls — works completely offline.
+- **Tool persistence across forward() calls**: Activated tools are re-injected via `beforeStep` hook so the LLM doesn't re-discover tools on each delegation.
+- **Auto-activation from results**: When a tool result mentions a deferred tool name (e.g., error response suggests `fix_query_error`), that tool is automatically activated.
+- **Related tool activation**: When tools are discovered, semantically related tools sharing domain tokens are proactively activated.
+
+### Changed
+- **Refactored `agents/index.ts`**: Split 1300+ line monolith into separate modules:
+  - `statefulAgent.ts` — `StatefulAxAgent` class
+  - `lazyAgent.ts` — `LazyStatefulAxAgent` class
+  - `crew.ts` — `AxCrew` class
+  - `deferredTools.ts` — `DeferredToolManager` class
+  - `index.ts` — barrel exports
+
 ## [8.7.4] - 2026-03-24
 
 ### Added

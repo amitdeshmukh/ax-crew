@@ -6,7 +6,7 @@ description: "State management: shared state, StateInstance, set, get, getAll, r
 
 # State
 
-Every `AxCrew` instance has a shared `StateInstance` at `crew.state`. All agents and class-based functions in the crew can access the same state.
+Every `AxCrew` instance has a shared `StateInstance` at `crew.crewState`. All agents and class-based functions in the crew can access the same state.
 
 ## StateInstance API
 
@@ -21,9 +21,9 @@ interface StateInstance {
 
 ## Core Behavior
 
-- `crew.state` is created automatically when `new AxCrew(config)` is called.
+- `crew.crewState` is created automatically when `new AxCrew(config)` is called.
 - State is keyed by `crewId` (auto-generated UUID). Each crew instance has its own isolated state.
-- State persists for the lifetime of the crew. Calling `crew.destroy()` calls `state.reset()`.
+- State persists for the lifetime of the crew. Calling `crew.destroy()` calls `crewState.reset()`.
 - Values can be any type: strings, objects, arrays, etc.
 
 ## Canonical Pattern
@@ -53,7 +53,7 @@ class SendEmail {
         required: ['to', 'subject', 'body']
       },
       func: async ({ to, subject, body }: { to: string; subject: string; body: string }) => {
-        // Access env credentials set via crew.state.set("env", {...})
+        // Access env credentials set via crew.crewState.set("env", {...})
         const env = this.state.env || {};
         const smtpHost = env.SMTP_HOST;
         const smtpUser = env.SMTP_USER;
@@ -84,15 +84,15 @@ async function main() {
   const crew = new AxCrew(config, functions);
 
   // Set environment variables in shared state BEFORE adding agents
-  crew.state.set("env", {
+  crew.crewState.set("env", {
     SMTP_HOST: "smtp.example.com",
     SMTP_USER: "user@example.com",
     SMTP_PASS: "secret",
   });
 
   // You can also set arbitrary data
-  crew.state.set("company", "Acme Corp");
-  crew.state.set("maxRetries", 3);
+  crew.crewState.set("company", "Acme Corp");
+  crew.crewState.set("maxRetries", 3);
 
   await crew.addAllAgents();
   const notifier = crew.agents?.get("notifier");
@@ -101,11 +101,11 @@ async function main() {
   console.log(result?.result);
 
   // Read state back
-  console.log("All state:", crew.state.getAll());
-  console.log("Company:", crew.state.get("company"));
+  console.log("All state:", crew.crewState.getAll());
+  console.log("Company:", crew.crewState.get("company"));
 
   // Reset state (clear all)
-  crew.state.reset();
+  crew.crewState.reset();
 
   crew.destroy();
 }
@@ -118,7 +118,7 @@ main().catch(console.error);
 The common pattern for passing credentials to class-based functions:
 
 ```ts
-crew.state.set("env", {
+crew.crewState.set("env", {
   WORDPRESS_URL: "http://my-wordpress-site.com",
   WORDPRESS_USERNAME: "my-username",
   WORDPRESS_PASSWORD: "my-password",
@@ -147,11 +147,11 @@ class MyFunction {
 
 ## Accessing State from Agents
 
-Each `StatefulAxAgent` has a `state` property that references the crew's shared state:
+Each `StatefulAxAgent` has a `crewState` property that references the crew's shared state:
 
 ```ts
 const agent = crew.agents?.get("myAgent");
-// agent.state is the same StateInstance as crew.state
+// agent.crewState is the same StateInstance as crew.crewState
 ```
 
 ## Supporting files
@@ -160,8 +160,8 @@ const agent = crew.agents?.get("myAgent");
 ## Do Not Generate
 
 - Do NOT assume state values exist without checking; always use optional chaining (e.g. `this.state.env?.KEY`).
-- Do NOT call `crew.state.set("env", ...)` after `addAllAgents()` if class-based functions read state during construction -- set state first.
-- Do NOT confuse `crew.state` (StateInstance with `set`/`get`/`getAll`/`reset`) with plain objects. The state object passed to class-based function constructors is a plain record, not the `StateInstance` interface.
+- Do NOT call `crew.crewState.set("env", ...)` after `addAllAgents()` if class-based functions read state during construction -- set state first.
+- Do NOT confuse `crew.crewState` (StateInstance with `set`/`get`/`getAll`/`reset`) with plain objects. The state object passed to class-based function constructors is a plain record, not the `StateInstance` interface.
 - Do NOT store sensitive credentials in state if the state object might be logged or serialized. The `getAll()` method returns all stored values.
 
 ## References

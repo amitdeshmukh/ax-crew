@@ -98,10 +98,23 @@ new AxCrew(crewConfig: AxCrewConfig, functionsRegistry?: FunctionRegistryType, o
 | `crew.agents?.get("A")` | Retrieve a `StatefulAxAgent` |
 | `await agent.forward({ key: "value" })` | Run the agent |
 | `agent.streamingForward({ key: "value" })` | Stream output chunks |
-| `crew.state` | Shared `StateInstance` across all agents |
+| `crew.crewState` | Shared `StateInstance` across all agents |
 | `crew.resetCosts()` | Reset usage/metrics for all agents |
 | `crew.getCrewMetrics()` | Aggregate metrics snapshot |
 | `crew.destroy()` | Clean up agents, state, execution history |
+
+## Deferred Tool Loading
+
+Agents with many MCP tools can use `deferredTools` in their agent config to avoid overwhelming the LLM context. When the total tool count exceeds a threshold (default 20), only core tools plus a `search_tools` meta-tool are visible to the agent. The LLM discovers additional tools by calling `search_tools`, which uses local multi-signal search (no API calls). Discovered tools persist across `forward()` calls, and related tools are proactively activated alongside the requested tool.
+
+```ts
+{
+  name: "BigToolAgent",
+  // ...
+  mcpServers: { /* ... */ },
+  deferredTools: { maxTools: 20 },  // optional, 20 is the default threshold
+}
+```
 
 ## Related Skills
 

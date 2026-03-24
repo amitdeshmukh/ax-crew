@@ -93,7 +93,7 @@ const main = async () => {
   // Refer to https://github.com/WP-API/Basic-Auth?tab=readme-ov-file
   
   // Set environment variables
-  crew.state.set("env", {
+  crew.crewState.set("env", {
     WORDPRESS_URL: "http://my-wordpress-site.com",
     WORDPRESS_USERNAME: "my-username",
     WORDPRESS_PASSWORD: "my-password"

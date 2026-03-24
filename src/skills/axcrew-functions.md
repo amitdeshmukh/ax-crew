@@ -192,7 +192,7 @@ async function main() {
   const crew = new AxCrew(config, customFunctions);
 
   // Set state for class-based functions
-  crew.state.set("env", { API_BASE_URL: "https://api.example.com" });
+  crew.crewState.set("env", { API_BASE_URL: "https://api.example.com" });
 
   await crew.addAllAgents();
   const assistant = crew.agents?.get("assistant");
@@ -210,7 +210,7 @@ main().catch(console.error);
 ## Do Not Generate
 
 - Do NOT define functions inline in AgentConfig; always use a `FunctionRegistryType` registry passed to the `AxCrew` constructor.
-- Do NOT forget that class-based function constructors receive `state: Record<string, any>`, not `StateInstance`. Access values directly (e.g. `this.state.env`), since the state object is a plain record populated via `crew.state.set()`.
+- Do NOT forget that class-based function constructors receive `state: Record<string, any>`, not `StateInstance`. Access values directly (e.g. `this.state.env`), since the state object is a plain record populated via `crew.crewState.set()`.
 - Do NOT use a registry key that differs from the function name used in `AgentConfig.functions[]` -- they must match.
 - Do NOT import `AxCrewFunctions` from `@ax-llm/ax`; import from `@amitdeshmukh/ax-crew`.
 

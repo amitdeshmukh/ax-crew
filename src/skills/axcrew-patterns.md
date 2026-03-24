@@ -251,8 +251,8 @@ Target audience: intermediate developers familiar with TypeScript.`,
 All agents in a crew share a mutable `state` object for out-of-band data passing:
 
 ```ts
-crew.state.set("env", { WORDPRESS_URL: "http://...", WORDPRESS_USERNAME: "..." });
-crew.state.set("context", { userId: "abc-123" });
+crew.crewState.set("env", { WORDPRESS_URL: "http://...", WORDPRESS_USERNAME: "..." });
+crew.crewState.set("context", { userId: "abc-123" });
 
 // Inside a custom function, state is accessible via the constructor:
 class MyTool {
@@ -279,7 +279,7 @@ class MyTool {
 
 - Do NOT add a parent agent before its sub-agents -- `addAgentsToCrew` resolves dependencies but `addAgent` does not.
 - Do NOT use `agents: ["SelfName"]` -- an agent cannot be its own sub-agent (circular dependency error).
-- Do NOT assume agents share conversation context -- they share `state` but each `forward()` call is independent. Pass data explicitly via signatures.
+- Do NOT assume agents share conversation context -- they share `crewState` but each `forward()` call is independent. Pass data explicitly via signatures.
 - Do NOT use `definition` shorter than 100 characters -- Ax requires minimum length for program definitions.
 - Do NOT confuse `description` (used as the tool description when this agent is a sub-agent) with `definition` (the system prompt).
 

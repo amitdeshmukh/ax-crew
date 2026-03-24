@@ -205,6 +205,28 @@ async function main() {
 main().catch(console.error);
 ```
 
+## Deferred Tool Loading
+
+When an agent has many MCP tools, use the `deferredTools` config option to keep the LLM context manageable. When the total tool count exceeds a threshold (default 20), only core tools plus a `search_tools` meta-tool are visible. The LLM discovers additional tools by calling `search_tools`, which uses local multi-signal search (no API calls). Discovered tools persist across `forward()` calls, and related tools are proactively activated alongside the requested tool.
+
+```typescript
+{
+  name: "BigMCPAgent",
+  description: "Agent with many MCP tools",
+  signature: 'query:string -> answer:string',
+  provider: "google-gemini",
+  providerKeyName: "GEMINI_API_KEY",
+  ai: { model: "gemini-2.5-pro", temperature: 0 },
+  mcpServers: {
+    "large-server": {
+      command: "npx",
+      args: ["-y", "some-large-mcp-server"],
+    },
+  },
+  deferredTools: { maxTools: 20 },  // optional, 20 is the default threshold
+}
+```
+
 ## Supporting files
 - See [examples/mcp-agent.ts](examples/mcp-agent.ts) for a complete runnable example.
 - See [examples/graphjin-database-agent.ts](examples/graphjin-database-agent.ts) for Streamable HTTP transport.

@@ -92,8 +92,8 @@ const myFunctions: FunctionRegistryType = {
 const crew = new AxCrew(config, myFunctions);
 
 // Set and get state
-crew.state.set('key', 'value');
-const value: string = crew.state.get('key');
+crew.crewState.set('key', 'value');
+const value: string = crew.crewState.get('key');
 
 // Add agents to the crew
 await crew.addAgentsToCrew(['Planner']);
@@ -125,7 +125,7 @@ Key TypeScript features:
 - **Agent**: An LLM program with a `signature`, `provider`, `ai` model config, optional `examples`, and optional `mcpServers`.
 - **Sub‑agents**: List other agent names in `agents` to compose behaviors.
 - **Functions (tools)**: Register callable functions via a registry and reference by name in agent `functions`.
-- **State**: `crew.state.set/get/getAll()` shared across all agents.
+- **State**: `crew.crewState.set/get/getAll()` shared across all agents.
 - **Persona**: Use `definition` (preferred) or `prompt` to set the system program. If both are present, `definition` wins.
 - **Execution mode**: Set `executionMode` to `axgen` (default) or `axagent` per agent.
 - **Streaming**: Use `streamingForward()` for token streams.
@@ -443,19 +443,19 @@ The `StatefulAxAgent` class in `src/agents/index.js` allows for shared state fun
 
 ```javascript
 // Set some state (key/value) for this crew
-crew.state.set('name', 'Crew1');
-crew.state.set('location', 'Earth');
+crew.crewState.set('name', 'Crew1');
+crew.crewState.set('location', 'Earth');
 
 // Get the state for the crew
-crew.state.get('name'); // 'Crew1'
-crew.state.getAll(); // { name: 'Crew1', location: 'Earth' }
+crew.crewState.get('name'); // 'Crew1'
+crew.crewState.getAll(); // { name: 'Crew1', location: 'Earth' }
 ``` 
 
 State can also be set/get by individual agents in the crew. This state is shared with all agents. It is also passed to any functions expressed as a class in `FunctionsRegistry`.
 
 ```javascript
-Planner.state.set('plan', 'Fly to Mars'); 
-console.log(Manager.state.getAll()); // { name: 'Crew1', location: 'Earth', plan: 'Fly to Mars' }
+Planner.crewState.set('plan', 'Fly to Mars');
+console.log(Manager.crewState.getAll()); // { name: 'Crew1', location: 'Earth', plan: 'Fly to Mars' }
 ```
 
 ## Example Agent task
