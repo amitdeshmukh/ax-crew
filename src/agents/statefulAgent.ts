@@ -282,7 +282,10 @@ class StatefulAxAgent extends AxAgent<any, any> {
     const existingHooks = (options as any)?.stepHooks as AxStepHooks | undefined;
 
     const mergedHooks: AxStepHooks = {
-      beforeStep: existingHooks?.beforeStep,
+      beforeStep: async (ctx) => {
+        await existingHooks?.beforeStep?.(ctx);
+        await deferredHooks.beforeStep?.(ctx);
+      },
       afterStep: existingHooks?.afterStep,
       afterFunctionExecution: async (ctx) => {
         await existingHooks?.afterFunctionExecution?.(ctx);

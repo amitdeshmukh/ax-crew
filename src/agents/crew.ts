@@ -44,8 +44,6 @@ class AxCrew {
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
   crewState: StateInstance;
-  // Cached AI instance for embeddings (resolved from Manager or first agent)
-  private embeddingAi: any | null = null;
   // Execution history for ACE feedback routing
   private executionHistory: Map<string, {
     taskId: string;
@@ -80,33 +78,6 @@ class AxCrew {
     this.agents = new Map<string, StatefulAxAgent>();
     this.crewState = createState(crewId);
     this.crewState.set('crewId', crewId);
-  }
-
-  /**
-   * Resolve an AI service for embeddings.
-   * Uses the Manager agent's AI if configured, otherwise the first agent's AI.
-   * Caches the result for reuse across all DeferredToolManagers in this crew.
-   */
-  private resolveEmbeddingAi(): any | null {
-    if (this.embeddingAi) return this.embeddingAi;
-
-    if (this.agents && this.agents.size > 0) {
-      // Prefer Manager agent
-      for (const [name, agent] of this.agents) {
-        if (name.toLowerCase().includes('manager')) {
-          this.embeddingAi = (agent as any).axai;
-          return this.embeddingAi;
-        }
-      }
-      // Fall back to first agent
-      const first = this.agents.values().next().value;
-      if (first) {
-        this.embeddingAi = (first as any).axai;
-        return this.embeddingAi;
-      }
-    }
-
-    return null;
   }
 
   /**
@@ -189,9 +160,6 @@ class AxCrew {
         : instrumentedFunctions;
 
       if (deferredManager.isActive) {
-        const embeddingAi = this.resolveEmbeddingAi() ?? ai;
-        await deferredManager.initSemanticSearch(embeddingAi);
-
         console.log(
           `[ax-crew] Deferred tool loading active for "${name}": ` +
           `${effectiveFunctions.length} core + search_tools, ` +

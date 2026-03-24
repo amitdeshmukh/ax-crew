@@ -23,12 +23,12 @@ const config = {
   crew: [
     {
       name: "DatabaseAgent",
-      description: "An agent with direct database access via GraphJin. Can query products, customers, orders, and explore database schema.",
+      description: "An agent with direct database access via GraphJin. Can explore database schema, query tables, list save and run workflows in the builtin JS sandbox etc.",
       signature: 'dbQuery:string "a database question or query request" -> dbResult:string "the query result or answer"',
       provider: "google-gemini",
       providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gemini-2.5-pro",
+        model: "gemini-pro-latest",
         temperature: 0,
         stream: false
       },
@@ -58,7 +58,7 @@ Keep your responses clear and well-formatted.`,
       provider: "google-gemini",
       providerKeyName: "GEMINI_API_KEY",
       ai: {
-        model: "gemini-2.5-pro",
+        model: "gemini-flash-latest",
         maxTokens: 2000,
         temperature: 0,
         stream: false
@@ -74,7 +74,7 @@ Keep your responses clear and well-formatted.`,
 // Create a new instance of AxCrew with the config
 const crew = new AxCrew(config as AxCrewConfig);
 
-const userQuery = "Which products have the most support tickets requesting refunds, and what is the total refund amount per product?";
+const userQuery = "Which products have the most support tickets requesting refunds?";
 
 console.log(`\nQuestion: ${userQuery}`);
 
