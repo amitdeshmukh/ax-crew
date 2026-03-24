@@ -8,22 +8,25 @@ import type {
   AxProgramForwardOptions,
   AxProgramStreamingForwardOptions,
   AxGenStreamingOut,
+  AxStepHooks,
 } from "@ax-llm/ax";
 
 import type {
-   StateInstance, 
-   FunctionRegistryType, 
-   UsageCost, 
+   StateInstance,
+   FunctionRegistryType,
+   UsageCost,
    AxCrewConfig,
    AxCrewOptions,
    MCPTransportConfig,
    ACEConfig,
    AgentExecutionMode,
    AxCrewAxAgentOptions,
+   DeferredToolsConfig,
 } from "../types.js";
 
 import { createState }   from "../state/index.js";
 import { parseCrewConfig, parseAgentConfig } from "./agentConfig.js";
+import { DeferredToolManager } from "./deferredTools.js";
 import { MetricsRegistry } from "../metrics/index.js";
 
 // Define the interface for the agent configuration
@@ -48,7 +51,7 @@ interface ParsedAgentConfig {
 
 // Extend the AxAgent class from ax-llm
 class StatefulAxAgent extends AxAgent<any, any> {
-  state: StateInstance;
+  crewState: StateInstance;
   axai: any;
   private agentName: string;
   private agentDefinition: string;
@@ -56,6 +59,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
   private axGenProgram: AxGen<any, any>;
   private costTracker?: any;
   private debugEnabled: boolean = false;
+  private deferredToolManager?: DeferredToolManager;
   private static readonly modernAxAgentRuntime =
     typeof (AxAgent as any)?.prototype?.getFunction === "function" &&
     typeof (AxAgent as any)?.prototype?.setExamples !== "function";
@@ -157,7 +161,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
       );
     }
 
-    this.state = state;
+    this.crewState = state;
     this.axai = ai;
     this.agentName = options.name;
     this.agentDefinition = effectiveDefinition;
@@ -275,16 +279,36 @@ class StatefulAxAgent extends AxAgent<any, any> {
     return { ai, values, options, calledWithAI };
   }
 
+  /** Merge deferred tool step hooks into forward options */
+  private mergeStepHooks(options?: Readonly<AxProgramForwardOptions<any>>): Readonly<AxProgramForwardOptions<any>> | undefined {
+    if (!this.deferredToolManager?.isActive) return options;
+
+    const deferredHooks = this.deferredToolManager.getStepHooks();
+    const existingHooks = (options as any)?.stepHooks as AxStepHooks | undefined;
+
+    const mergedHooks: AxStepHooks = {
+      beforeStep: existingHooks?.beforeStep,
+      afterStep: existingHooks?.afterStep,
+      afterFunctionExecution: async (ctx) => {
+        await existingHooks?.afterFunctionExecution?.(ctx);
+        await deferredHooks.afterFunctionExecution?.(ctx);
+      },
+    };
+
+    return { ...options, stepHooks: mergedHooks } as any;
+  }
+
   private async executeForwardByMode(
     mode: AgentExecutionMode,
     ai: AxAI,
     values: Record<string, any>,
     options?: Readonly<AxProgramForwardOptions<any>>
   ): Promise<Record<string, any>> {
+    const opts = this.mergeStepHooks(options);
     if (mode === "axgen") {
-      return this.axGenProgram.forward(ai, values, options as any);
+      return this.axGenProgram.forward(ai, values, opts as any);
     }
-    return super.forward(ai, values, options as any);
+    return super.forward(ai, values, opts as any);
   }
 
   private recordUsageMetrics(
@@ -344,21 +368,21 @@ class StatefulAxAgent extends AxAgent<any, any> {
     );
 
     const start = performance.now();
-    const crewId = (this.state as any)?.crewId || this.state.get?.("crewId") || "default";
+    const crewId = (this.crewState as any)?.crewId || this.crewState.get?.("crewId") || "default";
     const labels = { crewId, agent: this.agentName };
     const taskId = `task_${crewId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Track execution context in crew for ACE feedback routing
-    const crewInstance = (this.state as any)?.crew as AxCrew;
+    const crewInstance = (this.crewState as any)?.crew as AxCrew;
     if (crewInstance) {
       if (calledWithAI) {
-        const parentTaskId = (this.state as any)?.currentTaskId;
+        const parentTaskId = (this.crewState as any)?.currentTaskId;
         if (parentTaskId) {
           crewInstance.trackAgentExecution(parentTaskId, this.agentName, values);
         }
       } else {
         crewInstance.trackAgentExecution(taskId, this.agentName, values);
-        (this.state as any).currentTaskId = taskId;
+        (this.crewState as any).currentTaskId = taskId;
       }
     }
 
@@ -377,13 +401,13 @@ class StatefulAxAgent extends AxAgent<any, any> {
 
     if (crewInstance) {
       if (calledWithAI) {
-        const parentTaskId = (this.state as any)?.currentTaskId;
+        const parentTaskId = (this.crewState as any)?.currentTaskId;
         if (parentTaskId) {
           crewInstance.recordAgentResult(parentTaskId, this.agentName, result);
         }
       } else {
         crewInstance.recordAgentResult(taskId, this.agentName, result);
-        delete (this.state as any).currentTaskId;
+        delete (this.crewState as any).currentTaskId;
         (result as any)._taskId = taskId;
       }
     }
@@ -416,13 +440,14 @@ class StatefulAxAgent extends AxAgent<any, any> {
       third
     );
     const start = performance.now();
-    const crewId = (this.state as any)?.crewId || this.state.get?.("crewId") || "default";
+    const crewId = (this.crewState as any)?.crewId || this.crewState.get?.("crewId") || "default";
     const labels = { crewId, agent: this.agentName };
 
+    const opts = this.mergeStepHooks(options as any);
     const createStream = () =>
       mode === "axgen"
-        ? this.axGenProgram.streamingForward(ai, values, options as any)
-        : super.streamingForward(ai, values, options as any);
+        ? this.axGenProgram.streamingForward(ai, values, opts as any)
+        : super.streamingForward(ai, values, opts as any);
 
     const wrappedGenerator = (async function* (this: StatefulAxAgent) {
       if (this.aceConfig) {
@@ -471,7 +496,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
    * @returns A metrics snapshot scoped to this agent within its crew.
    */
   getMetrics() {
-    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
+    const crewId = (this.crewState as any)?.crewId || (this.crewState.get?.('crewId')) || 'default';
     return MetricsRegistry.snapshot({ crewId, agent: this.agentName } as any);
   }
   /**
@@ -479,7 +504,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
    * Call this to start fresh measurement windows for the agent.
    */
   resetMetrics(): void {
-    const crewId = (this.state as any)?.crewId || (this.state.get?.('crewId')) || 'default';
+    const crewId = (this.crewState as any)?.crewId || (this.crewState.get?.('crewId')) || 'default';
     MetricsRegistry.reset({ crewId, agent: this.agentName } as any);
   }
 
@@ -810,7 +835,9 @@ class AxCrew {
   functionsRegistry: FunctionRegistryType = {};
   crewId: string;
   agents: Map<string, StatefulAxAgent> | null;
-  state: StateInstance;
+  crewState: StateInstance;
+  // Cached AI instance for embeddings (resolved from Manager or first agent)
+  private embeddingAi: any | null = null;
   // Execution history for ACE feedback routing
   private executionHistory: Map<string, {
     taskId: string;
@@ -852,9 +879,38 @@ class AxCrew {
     this.crewId = crewId;
     this.options = options;
     this.agents = new Map<string, StatefulAxAgent>();
-    this.state = createState(crewId);
+    this.crewState = createState(crewId);
     // Make crewId discoverable to metrics
-    this.state.set('crewId', crewId);
+    this.crewState.set('crewId', crewId);
+  }
+
+  /**
+   * Resolve an AI service for embeddings.
+   * Uses the Manager agent's AI if configured, otherwise the first agent's AI.
+   * Only creates the AI instance — does NOT initialize MCP servers or functions.
+   * Caches the result for reuse across all DeferredToolManagers in this crew.
+   */
+  private resolveEmbeddingAi(): any | null {
+    if (this.embeddingAi) return this.embeddingAi;
+
+    // If any agent is already created, reuse its AI instance
+    if (this.agents && this.agents.size > 0) {
+      // Prefer Manager agent
+      for (const [name, agent] of this.agents) {
+        if (name.toLowerCase().includes('manager')) {
+          this.embeddingAi = (agent as any).axai;
+          return this.embeddingAi;
+        }
+      }
+      // Fall back to first agent
+      const first = this.agents.values().next().value;
+      if (first) {
+        this.embeddingAi = (first as any).axai;
+        return this.embeddingAi;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -869,7 +925,7 @@ class AxCrew {
         agentName,
         this.crewConfig,
         this.functionsRegistry,
-        this.state,
+        this.crewState,
         this.options
       );
 
@@ -937,9 +993,31 @@ class AxCrew {
         },
       }));
 
+      // Deferred tool loading: if tool count exceeds threshold, split into
+      // core (always visible) + deferred (discoverable via search_tools)
+      const mcpFnNames: ReadonlySet<string> = (agentConfig as any).mcpFunctionNames ?? new Set();
+      const deferredConfig: DeferredToolsConfig | undefined = (agentConfig as any).deferredTools;
+      const deferredManager = new DeferredToolManager(instrumentedFunctions, mcpFnNames, deferredConfig);
+      const effectiveFunctions = deferredManager.isActive
+        ? deferredManager.getInitialFunctions()
+        : instrumentedFunctions;
+
+      if (deferredManager.isActive) {
+        // Initialize semantic search — use this agent's AI for embeddings,
+        // or the Manager's AI if already available
+        const embeddingAi = this.resolveEmbeddingAi() ?? ai;
+        await deferredManager.initSemanticSearch(embeddingAi);
+
+        console.log(
+          `[ax-crew] Deferred tool loading active for "${name}": ` +
+          `${effectiveFunctions.length} core + search_tools, ` +
+          `${instrumentedFunctions.length - effectiveFunctions.length + 1} deferred`
+        );
+      }
+
       // Create an instance of StatefulAxAgent
       // Set crew reference in state for execution tracking (ACE feedback routing)
-      const agentState = { ...this.state, crew: this };
+      const agentState = { ...this.crewState, crew: this };
       const agent = new StatefulAxAgent(
         ai,
         {
@@ -949,7 +1027,7 @@ class AxCrew {
           description,
           definition: (agentConfig as any).definition,
           signature,
-          functions: instrumentedFunctions,
+          functions: effectiveFunctions,
           agents: uniqueSubAgents,
           examples,
           debug: (agentConfig as any).debug,
@@ -957,6 +1035,9 @@ class AxCrew {
         agentState as StateInstance
       );
       (agent as any).costTracker = tracker;
+      if (deferredManager.isActive) {
+        (agent as any).deferredToolManager = deferredManager;
+      }
       (agent as any).__functionsRegistry = this.functionsRegistry;
 
       // Initialize ACE if configured
@@ -1239,7 +1320,7 @@ class AxCrew {
   destroy() {
     this.agents = null;
     this.executionHistory.clear();
-    this.state.reset();
+    this.crewState.reset();
   }
 
 

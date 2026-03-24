@@ -203,6 +203,22 @@ interface ACEConfig {
 }
 
 /**
+ * Configuration for deferred tool loading.
+ * When an agent has many tools, only core tools are visible by default.
+ * A search_tools meta-function lets the LLM discover and activate deferred tools on demand.
+ */
+interface DeferredToolsConfig {
+  /** Enable deferred tool loading. Default: auto (true when tool count > threshold) */
+  enabled?: boolean;
+  /** Tool count threshold to activate deferred mode. Default: 20 */
+  threshold?: number;
+  /** Max tools returned per search. Default: 10 */
+  maxSearchResults?: number;
+  /** Tool names to always keep active (bypasses deferral) */
+  coreTools?: string[];
+}
+
+/**
  * The configuration for an agent.
  * 
  * @property {string} name - Name of the agent.
@@ -261,6 +277,8 @@ interface AgentConfig {
   mcpServers?: Record<string, MCPTransportConfig>;
   /** Optional AxACE configuration to enable optimization for this agent */
   ace?: ACEConfig;
+  /** Deferred tool loading — reduces token usage when an agent has many tools */
+  deferredTools?: DeferredToolsConfig;
 }
 
 /**
@@ -335,6 +353,7 @@ export {
   type ModelInfo,
   type UsageCost,
   type AggregatedCosts,
+  type DeferredToolsConfig,
   // ACE exports
   type ACEConfig,
   type ACEMetricConfig,

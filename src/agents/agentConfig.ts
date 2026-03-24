@@ -218,6 +218,9 @@ const parseAgentConfig = async (
     const executionMode: AgentExecutionMode =
       agentConfigData.executionMode === 'axagent' ? 'axagent' : 'axgen';
     
+    // Track MCP function names for deferred tool loading
+    const mcpFunctionNames = new Set(mcpFunctions.map(fn => fn.name));
+
     // Return AI instance and Agent parameters
     return {
       ai: aiInstance,
@@ -228,9 +231,11 @@ const parseAgentConfig = async (
       definition: (agentConfigData as any).definition ?? (agentConfigData as any).prompt,
       signature: agentConfigData.signature,
       functions: agentFunctions,
+      mcpFunctionNames,
       subAgentNames: agentConfigData.agents || [],
       examples: agentConfigData.examples || [],
       tracker: costTracker,
+      deferredTools: (agentConfigData as any).deferredTools,
       debug: (agentConfigData as any).options?.debug ?? (agentConfigData as any).debug ?? false,
     };
   } catch (error) {

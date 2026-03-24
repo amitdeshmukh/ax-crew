@@ -2,12 +2,13 @@ import { AxCrew } from './agents/index.js';
 import { AxCrewFunctions } from './functions/index.js';
 import type { AxCrewConfig, AxCrewOptions, AgentConfig, AgentExecutionMode, AxCrewAxAgentOptions } from './types.js';
 
-import type { 
-  UsageCost, 
-  AggregatedMetrics, 
+import type {
+  UsageCost,
+  AggregatedMetrics,
   AggregatedCosts,
-  StateInstance, 
+  StateInstance,
   FunctionRegistryType,
+  DeferredToolsConfig,
   ACEConfig,
   ACETeacherConfig,
   ACEPersistenceConfig,
@@ -56,6 +57,8 @@ export {
   type AxCrewOptions,
   type StateInstance,
   type UsageCost,
+  // Deferred tools
+  type DeferredToolsConfig,
   // ACE type exports
   type ACEConfig,
   type ACETeacherConfig,

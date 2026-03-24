@@ -5,27 +5,17 @@ import dotenv from "dotenv";
 dotenv.config();
 
 /**
- * GraphJin MCP Server Example
+ * GraphJin MCP Server Example — with deferred tool loading
  *
- * This example demonstrates how to use GraphJin as an MCP server to give AI agents
- * direct access to databases. GraphJin auto-discovers your database schema and provides
- * tools for querying, schema exploration, and more.
+ * This example demonstrates deferred tool loading: when an agent has many
+ * MCP tools, only core tools + a search_tools meta-function are visible
+ * to the LLM. The LLM discovers and activates deferred tools on demand.
  *
  * Setup:
  * 1. Install GraphJin: npm install -g graphjin
  * 2. Start GraphJin demo server: graphjin serve --demo --path /path/to/graphjin/examples/webshop
  * 3. GraphJin will start on http://localhost:8080
  * 4. The MCP proxy connects to it via stdio
- *
- * Alternative setup (direct mode):
- * If you have a GraphJin config, you can use direct mode without a running server:
- * - Use command: "graphjin" with args: ["mcp", "--demo", "--path", "/path/to/config"]
- *
- * Note: There is currently a schema validation issue between GraphJin and Ax.
- * GraphJin's array parameters don't include "items" definitions in their JSON Schema,
- * which Ax requires per JSON Schema spec. A fix is needed in either:
- * - GraphJin's mcp-go integration (recommended)
- * - Or Ax's schema validation (less recommended)
  */
 
 // Define the crew configuration
@@ -43,21 +33,19 @@ const config = {
         stream: false
       },
       options: {
-        debug: false
+        debug: true
       },
-      // MCP Server Configuration for GraphJin
-      // This assumes you have graphjin running on http://localhost:8080
-      // Start it with: graphjin serve --demo --path /path/to/graphjin/examples/webshop
       mcpServers: {
         "graphjin": {
           "command": "graphjin",
-          // Proxy mode: connects to a running GraphJin HTTP server
           "args": ["mcp", "--server", "http://localhost:8080"]
-
-          // Direct mode (alternative - uncomment to use):
-          // Runs GraphJin MCP server directly with demo database
-          // "args": ["mcp", "--demo", "--path", "/path/to/your/graphjin/config"]
         }
+      },
+      // Force deferred mode with a low threshold for testing
+      // (GraphJin exposes ~30 tools, but this ensures it activates even with fewer)
+      deferredTools: {
+        enabled: true,
+        threshold: 5,
       },
     },
     {
@@ -76,7 +64,7 @@ Keep your responses clear and well-formatted.`,
         stream: false
       },
       options: {
-        debug: true,
+        debug: false,
       },
       agents: ["DatabaseAgent"]
     }
@@ -86,31 +74,31 @@ Keep your responses clear and well-formatted.`,
 // Create a new instance of AxCrew with the config
 const crew = new AxCrew(config as AxCrewConfig);
 
-// Example queries to try:
-const queries = [
-  "What tables are available in the database?",
-  "Show me the schema for the products table",
-  "How many products are in the database?",
-  "List the top 5 most expensive products",
-  "What customers have placed orders in the last 30 days?"
-];
+const userQuery = "Which products have the most support tickets requesting refunds, and what is the total refund amount per product?";
 
-// Use a simpler query for testing
-const userQuery: string = queries[0]; // "What tables are available in the database?"
-
-console.log(`\n\nQuestion: ${userQuery}`);
+console.log(`\nQuestion: ${userQuery}`);
 
 const main = async (): Promise<void> => {
   try {
-    // Initialize agents inside main so initialization failures are handled here.
     await crew.addAllAgents();
 
     const managerAgent = crew.agents?.get("ManagerAgent");
     const databaseAgent = crew.agents?.get("DatabaseAgent");
 
+    // Log the initial tool set for DatabaseAgent
+    const allFns = (databaseAgent as any)?.axGenProgram?.functions?.map((f: any) => f.name);
+    console.log(`\n--- DatabaseAgent initial tools (${allFns?.length ?? 0}) ---`);
+    console.log(allFns);
+
+    // Check if deferred mode is active
+    const dm = (databaseAgent as any)?.deferredToolManager;
+    console.log(`\nDeferred mode active: ${dm?.isActive ?? false}`);
+
     if (!managerAgent) {
       throw new Error("Failed to initialize ManagerAgent");
     }
+
+    console.log("\n--- Starting query (watch for search_tools calls) ---\n");
 
     const managerResponse = await managerAgent.forward({
       question: userQuery,
@@ -118,18 +106,28 @@ const main = async (): Promise<void> => {
 
     console.log(`\nAnswer: ${JSON.stringify(managerResponse?.answer, null, 2)}`);
 
+    // Log final tool set to see what was activated
+    const finalFns = (databaseAgent as any)?.axGenProgram?.functions?.map((f: any) => f.name);
+    console.log(`\n--- DatabaseAgent final tools (${finalFns?.length ?? 0}) ---`);
+    console.log(finalFns);
+
+    // Show which tools were activated via search
+    if (allFns && finalFns) {
+      const activated = finalFns.filter((n: string) => !allFns.includes(n));
+      if (activated.length > 0) {
+        console.log(`\nTools activated via search_tools: ${activated.join(', ')}`);
+      }
+    }
+
     // Print metrics
     console.log("\nMetrics:\n+++++++++++++++++++++++++++++++++");
-    console.log("Manager Agent Metrics:", JSON.stringify((managerAgent as any)?.getMetrics?.(), null, 2));
-    console.log("Database Agent Metrics:", JSON.stringify((databaseAgent as any)?.getMetrics?.(), null, 2));
     console.log("Crew Metrics:", JSON.stringify((crew as any)?.getCrewMetrics?.(), null, 2));
   } catch (error) {
-    console.error("\n❌ Error:", error);
+    console.error("\nError:", error);
     console.error("\nTroubleshooting:");
     console.error("1. Make sure GraphJin is running: graphjin serve --demo --path /path/to/graphjin/examples/webshop");
     console.error("2. Check that GraphJin is accessible at http://localhost:8080");
     console.error("3. Verify graphjin is installed: which graphjin");
-    console.error("4. Note: There's a known schema validation issue - see comments in the code");
     throw error;
   } finally {
     crew.destroy();
@@ -138,10 +136,10 @@ const main = async (): Promise<void> => {
 
 main()
   .then(() => {
-    console.log("\n✅ Done");
+    console.log("\nDone");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("\n❌ Fatal error:", error);
+    console.error("\nFatal error:", error);
     process.exit(1);
   });
