@@ -43,7 +43,7 @@ const config = {
         stream: false
       },
       options: {
-        debug: true
+        debug: false
       },
       // MCP Server Configuration for GraphJin
       // This assumes you have graphjin running on http://localhost:8080

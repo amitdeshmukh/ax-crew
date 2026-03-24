@@ -54,7 +54,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
 
   let initializedClients: AxMCPClient[] = [];
   const functions: AxFunction[] = [];
-  
+
   try {
     for (const [mcpServerName, mcpServerConfig] of Object.entries(mcpServers)) {
       let transport;
@@ -68,7 +68,7 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
         transport = new AxMCPHTTPSSETransport(mcpServerConfig.sseUrl);
       } else if (isStreambleHTTPTransport(mcpServerConfig)) {
         transport = new AxMCPStreambleHTTPTransport(mcpServerConfig.mcpEndpoint, mcpServerConfig.options);
-      } else {  
+      } else {
         throw new Error(`Unsupported transport type: ${JSON.stringify(mcpServerConfig)}`);
       }
 
@@ -77,20 +77,21 @@ const initializeMCPServers = async (agentConfigData: AgentConfig): Promise<AxFun
       initializedClients.push(mcpClient);
       // Normalize MCP tool schemas: some MCP servers omit `parameters` for
       // zero-arg tools, but providers like Gemini require a valid schema.
-      let mcpFns = mcpClient.toFunction().map(fn => ({
+      const allFns = mcpClient.toFunction().map(fn => ({
         ...fn,
         parameters: fn.parameters ?? { type: 'object' as const, properties: {} },
       }));
 
-      // Filter to allowlisted tools if specified
+      // Filter to allowlisted tools if specified, but always include resource_* functions
       if (mcpServerConfig.tools && mcpServerConfig.tools.length > 0) {
         const allowed = new Set(mcpServerConfig.tools);
-        mcpFns = mcpFns.filter(fn => allowed.has(fn.name));
+        const filtered = allFns.filter(fn => allowed.has(fn.name) || fn.name.startsWith('resource_'));
+        functions.push(...filtered);
+      } else {
+        functions.push(...allFns);
       }
-
-      functions.push(...mcpFns);
     }
-    
+
     return functions;
   } catch (error) {
     initializedClients = [];
