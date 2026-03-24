@@ -24,20 +24,15 @@ const config = {
     {
       name: "DatabaseAgent",
       description: "An agent with direct database access via GraphJin. Can explore database schema, query tables, list save and run workflows in the builtin JS sandbox etc.",
-      definition: `You are a database agent with access to GraphJin tools. Follow this workflow:
-1. Use search_tools to discover available tools for your task.
-2. Use list_tables and describe_table to understand the schema BEFORE writing queries.
-3. Use get_query_syntax to learn the GraphJin DSL (it differs from standard GraphQL).
-4. IMPORTANT: If a query fails, NEVER retry the same query. Instead:
-   - Call fix_query_error with the failed query and error message to get repair guidance.
-   - Or call describe_table to re-check the schema.
-   - Or call get_query_syntax to review the correct syntax.
-5. Return the final result once you have the data.`,
-      signature: 'dbQuery:string "a database question or query request" -> dbResult:string "the query result or answer"',
-      provider: "google-gemini",
-      providerKeyName: "GEMINI_API_KEY",
+      definition: `You are a database agent with direct access to a GraphJin database server.
+You have resource docs available that describe the GraphJin query DSL, mutation syntax, workflow guides, and JS runtime API. Read them to understand how GraphJin works — its DSL differs from standard GraphQL.
+You can discover additional action tools via search_tools.
+If a query fails, do not retry the same query — use fix_query_error or re-check the schema instead.`,
+      signature: 'question:string "a natural language question about the database" -> answer:string "the answer to the question"',
+      provider: "anthropic",
+      providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "gemini-pro-latest",
+        model: "claude-sonnet-4-6",
         temperature: 0,
         stream: false
       },
@@ -60,14 +55,15 @@ const config = {
     {
       name: "ManagerAgent",
       description: "Orchestrates database queries and analysis tasks",
-      definition: `You are a manager agent that helps users get insights from databases.
-Delegate to DatabaseAgent for all database operations. Break complex questions into
-simple, specific sub-queries. Synthesize the results into a clear final answer.`,
+      definition: `You are an orchestrator that routes questions to specialized agents.
+Delegate each question to the most relevant agent in a SINGLE call — do not break questions into sub-queries.
+The sub-agent will handle all the steps internally. Your job is to route and synthesize, not to decompose.
+If multiple agents are needed, call them and combine their answers.`,
       signature: 'question:string "a question to be answered" -> answer:string "the answer to the question"',
-      provider: "google-gemini",
-      providerKeyName: "GEMINI_API_KEY",
+      provider: "anthropic",
+      providerKeyName: "ANTHROPIC_API_KEY",
       ai: {
-        model: "gemini-flash-latest",
+        model: "claude-sonnet-4-6",
         maxTokens: 2000,
         temperature: 0,
         stream: false
@@ -83,7 +79,7 @@ simple, specific sub-queries. Synthesize the results into a clear final answer.`
 // Create a new instance of AxCrew with the config
 const crew = new AxCrew(config as AxCrewConfig);
 
-const userQuery = "What are the different types of support tickets and how many of each type exist?";
+const userQuery = "which products had the most refund requests and why?";
 
 console.log(`\nQuestion: ${userQuery}`);
 

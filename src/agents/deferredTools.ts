@@ -33,6 +33,7 @@ export class DeferredToolManager {
   private coreNames: Set<string>;
   private readonly maxSearchResults: number;
   private readonly _isActive: boolean;
+  private resourceCache: Map<string, unknown>;
 
   // Pre-computed search index (built once at construction)
   private searchIndex: Map<string, {
@@ -69,6 +70,7 @@ export class DeferredToolManager {
     this.maxSearchResults = config?.maxSearchResults ?? DEFAULT_MAX_RESULTS;
     this.activatedNames = new Set();
     this.searchIndex = new Map();
+    this.resourceCache = new Map();
 
     // Build full registry
     this.registry = new Map();
@@ -176,12 +178,30 @@ export class DeferredToolManager {
     const initial: AxFunction[] = [];
     for (const name of this.coreNames) {
       const fn = this.registry.get(name);
-      if (fn) initial.push(fn);
+      if (fn) initial.push(fn.name.startsWith('resource_') ? this.wrapWithCache(fn) : fn);
     }
     if (this._isActive) {
       initial.push(this.createSearchToolFunction());
     }
     return initial;
+  }
+
+  /** Wrap a resource function so repeated calls return cached results */
+  private wrapWithCache(fn: AxFunction): AxFunction {
+    const cache = this.resourceCache;
+    const originalFunc = fn.func;
+    if (!originalFunc) return fn;
+
+    return {
+      ...fn,
+      func: async (args: Record<string, unknown>) => {
+        const cached = cache.get(fn.name);
+        if (cached !== undefined) return cached;
+        const result = await originalFunc(args);
+        cache.set(fn.name, result);
+        return result;
+      },
+    };
   }
 
   /** Get step hooks for dynamic tool activation.
