@@ -1,20 +1,20 @@
 # Changelog
 
-## [9.0.0] - 2026-03-24
+## [9.0.0] - 2026-03-25
 
 ### Breaking Changes
 - **`crew.state` renamed to `crew.crewState`**: The shared state property on `AxCrew` and `StatefulAxAgent` is now `crewState` instead of `state`. This avoids a conflict with ax-llm's new `private state: AxAgentState` on `AxAgent`. Update all `crew.state.set/get/getAll/reset` calls to `crew.crewState.set/get/getAll/reset`. Class-based function constructors still receive `state: Record<string, any>` (unchanged).
 
 ### Added
-- **Deferred tool loading**: When an agent has many MCP tools (20+), only core tools + a `search_tools` meta-function are sent to the LLM. The LLM discovers and activates deferred tools on demand via `search_tools`. Configurable via `deferredTools` on agent config:
+- **Deferred tool loading**: When an agent has many MCP tools (20+), only core tools + a `search_tools` meta-function are sent to the LLM. The LLM discovers and activates deferred tools on demand. Configurable via `deferredTools` on agent config:
   - `enabled`: force on/off (default: auto when tool count exceeds threshold)
   - `threshold`: tool count to activate (default: 20)
   - `maxSearchResults`: max tools per search (default: 10)
   - `coreTools`: tool names to always keep active
-- **Fully local tool search**: Multi-signal scoring with tokenization, synonym expansion, bigram overlap, and parameter name matching. Zero API calls — works completely offline.
-- **Tool persistence across forward() calls**: Activated tools are re-injected via `beforeStep` hook so the LLM doesn't re-discover tools on each delegation.
+- **Tool persistence across forward() calls**: Activated tools are re-injected via `beforeStep` hook so the LLM doesn't need to re-discover tools on each delegation.
 - **Auto-activation from results**: When a tool result mentions a deferred tool name (e.g., error response suggests `fix_query_error`), that tool is automatically activated.
-- **Related tool activation**: When tools are discovered, semantically related tools sharing domain tokens are proactively activated.
+- **Prompt caching**: `contextCache` is now enabled by default on AxGen programs. System prompts and tool definitions are cached across multi-step interactions, reducing token costs by up to 6x for agents with many tools. Works automatically with Anthropic (implicit caching) and Gemini (explicit context caching).
+- **MCP resource result caching**: `resource_*` function calls are cached in-memory so repeated reads of the same MCP resource doc return instantly without re-fetching from the server.
 
 ### Changed
 - **Refactored `agents/index.ts`**: Split 1300+ line monolith into separate modules:
@@ -23,6 +23,11 @@
   - `crew.ts` — `AxCrew` class
   - `deferredTools.ts` — `DeferredToolManager` class
   - `index.ts` — barrel exports
+- **Improved GraphJin example** (`examples/graphjin-database-agent.ts`):
+  - Strategy-driven DatabaseAgent prompt: check saved workflows first, build JS workflows with `gj.tools.*` for server-side computation, save for reuse
+  - Single-delegation ManagerAgent pattern: route full questions to sub-agents in one call instead of decomposing into sub-queries (reduced costs from $128 to $0.17 on same query)
+  - Performance timers for setup/query/total wall-clock time
+  - Workflow reuse: saved workflows are checked and executed on repeat queries, ensuring reproducible results
 
 ## [8.7.4] - 2026-03-24
 
