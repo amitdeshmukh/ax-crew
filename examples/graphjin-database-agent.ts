@@ -37,7 +37,8 @@ STRATEGY:
 
 3. Build and validate:
    a. Author a JavaScript workflow using gj.tools.* for server-side computation. Design it with input variables — never hardcode values.
-   b. Call execute_graphql first to validate query shape and results before embedding in a workflow.
+   b. IMPORTANT: The database enforces a low default row limit (e.g. 20) on ALL queries including aggregations. Your workflow MUST paginate using cursor-based pagination (first: 20, after: cursor) to fetch complete results. Use first: 20 (not higher — the server silently caps it). Loop until the cursor stops changing or returns null.
+   c. Call execute_graphql first to validate query shape and results before embedding in a workflow.
 
 4. Save and run — call save_workflow with a descriptive snake_case name and tags, then execute_workflow.
 
@@ -93,7 +94,7 @@ If multiple agents are needed, call them and combine their answers.`,
 // Create a new instance of AxCrew with the config
 const crew = new AxCrew(config as AxCrewConfig);
 
-const userQuery = "Which employees have the most leave requests and how does that correlate with their performance review scores? Show the top 10.";
+const userQuery = "which products had the most refund requests and why?";
 
 console.log(`\nQuestion: ${userQuery}`);
 

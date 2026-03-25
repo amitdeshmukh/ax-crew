@@ -173,6 +173,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     this.axGenProgram = new AxGen(options.signature as any, {
       description: effectiveDefinition,
       functions: [...resolvedFunctions, ...subAgentFunctions],
+      contextCache: { cacheBreakpoint: 'after-examples' },
     } as any);
 
     for (const agent of resolvedAgents) {
