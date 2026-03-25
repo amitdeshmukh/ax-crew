@@ -1,6 +1,6 @@
 ---
 name: axcrew-mcp
-version: "8.7.3"
+version: "9.0.0"
 description: "ax-crew MCP integration: MCP, Model Context Protocol, STDIO, HTTP SSE, Streamable HTTP, mcpServers, tools, tool filtering, multiple servers"
 argument-hint: [topic]
 allowed-tools: Read, Grep, Glob
@@ -207,25 +207,43 @@ main().catch(console.error);
 
 ## Deferred Tool Loading
 
-When an agent has many MCP tools, use the `deferredTools` config option to keep the LLM context manageable. When the total tool count exceeds a threshold (default 20), only core tools plus a `search_tools` meta-tool are visible. The LLM discovers additional tools by calling `search_tools`, which uses local multi-signal search (no API calls). Discovered tools persist across `forward()` calls, and related tools are proactively activated alongside the requested tool.
+When an agent has many MCP tools (20+), use the `deferredTools` config to reduce token usage. Only core tools + a `search_tools` meta-function are sent to the LLM. The LLM discovers additional tools on demand. Discovered tools persist across `forward()` calls. Tool results that mention deferred tool names (e.g., error responses suggesting `fix_query_error`) auto-activate those tools.
 
 ```typescript
 {
   name: "BigMCPAgent",
   description: "Agent with many MCP tools",
   signature: 'query:string -> answer:string',
-  provider: "google-gemini",
-  providerKeyName: "GEMINI_API_KEY",
-  ai: { model: "gemini-2.5-pro", temperature: 0 },
+  provider: "anthropic",
+  providerKeyName: "ANTHROPIC_API_KEY",
+  ai: { model: "claude-sonnet-4-6", temperature: 0 },
   mcpServers: {
     "large-server": {
       command: "npx",
       args: ["-y", "some-large-mcp-server"],
     },
   },
-  deferredTools: { maxTools: 20 },  // optional, 20 is the default threshold
+  deferredTools: {
+    enabled: true,       // default: auto (true when tool count > threshold)
+    threshold: 20,       // tool count to activate deferred mode
+    maxSearchResults: 10, // max tools returned per search
+    coreTools: ["execute_graphql", "list_tables"],  // always keep active
+  },
 }
 ```
+
+### What is "core" vs "deferred"
+
+- **Core** (always visible): custom functions, sub-agent functions, `resource_*` functions, explicitly listed `coreTools`
+- **Deferred** (discoverable via search): MCP tool functions (except `resource_*`)
+
+### Resource Caching
+
+MCP `resource_*` functions (reference docs like query syntax guides) are automatically cached in-memory. Repeated calls return the cached result without re-fetching from the MCP server.
+
+## Prompt Caching
+
+Prompt caching is enabled by default for all agents. System prompts and tool definitions are cached across multi-step interactions via Anthropic's implicit caching or Gemini's context caching. This reduces token costs by up to 6x for agents with many tools — the system prompt (~13K tokens of tool schemas) is processed once and reused on subsequent steps.
 
 ## Supporting files
 - See [examples/mcp-agent.ts](examples/mcp-agent.ts) for a complete runnable example.

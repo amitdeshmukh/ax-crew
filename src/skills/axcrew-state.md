@@ -1,6 +1,6 @@
 ---
 name: axcrew-state
-version: 8.7.3
+version: 9.0.0
 description: "State management: shared state, StateInstance, set, get, getAll, reset, accessing state from class-based functions"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: axcrew-patterns
-version: 8.7.3
+version: 9.0.0
 description: "AxCrew multi-agent patterns: pipeline, delegation, fan-out, orchestrator, sequential workflows, and agent coordination."
 tags: [patterns, workflow, pipeline, multi-agent, orchestrator, delegation, sequential, fan-out]
 ---
@@ -271,9 +271,52 @@ class MyTool {
 }
 ```
 
+## Cost Optimization Pattern (Single-Delegation Manager)
+
+When a manager orchestrates sub-agents, use a **single-delegation** pattern: send the full question to the sub-agent in one call. Do NOT break questions into sub-queries — the sub-agent handles multi-step work internally.
+
+This pattern reduced costs from $128 to $1 on the same query in testing.
+
+```ts
+{
+  name: "ManagerAgent",
+  description: "Orchestrates database queries and analysis tasks",
+  definition: `You are an orchestrator that routes questions to specialized agents.
+Delegate each question to the most relevant agent in a SINGLE call — do not break questions into sub-queries.
+The sub-agent will handle all the steps internally. Your job is to route and synthesize, not to decompose.
+If multiple agents are needed, call them and combine their answers.`,
+  signature: 'question:string -> answer:string',
+  provider: "anthropic" as Provider,
+  providerKeyName: "ANTHROPIC_API_KEY",
+  ai: { model: "claude-sonnet-4-6", maxTokens: 2000, temperature: 0 },
+  agents: ["DatabaseAgent", "AnalyticsAgent"],
+}
+```
+
+## Workflow Reuse Pattern (MCP Agents)
+
+For agents connected to MCP servers, use a strategy-driven definition that checks for saved workflows before building new ones. This ensures repeat questions reuse cached workflows ($0.17) instead of rebuilding from scratch ($0.55).
+
+```ts
+{
+  name: "DatabaseAgent",
+  definition: `You answer questions by querying databases via an MCP server.
+
+STRATEGY:
+1. Check first — call list_workflows and list_saved_queries. If a match exists, execute it directly.
+2. Learn — read resource docs, list tables, describe schema.
+3. Build — author a JS workflow with server-side computation, validate with a test query.
+4. Save and run — save the workflow for reuse, then execute it.
+5. If a query fails, call fix_query_error to diagnose. Do not retry the same query.
+6. Synthesize the answer from results.`,
+  // ...
+}
+```
+
 ## Supporting files
 - See [examples/write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts) for a complete pipeline example.
 - See [examples/solve-math-problem.ts](examples/solve-math-problem.ts) for a delegation example.
+- See [examples/graphjin-database-agent.ts](examples/graphjin-database-agent.ts) for single-delegation + workflow reuse pattern.
 
 ## Do Not Generate
 
@@ -282,6 +325,7 @@ class MyTool {
 - Do NOT assume agents share conversation context -- they share `crewState` but each `forward()` call is independent. Pass data explicitly via signatures.
 - Do NOT use `definition` shorter than 100 characters -- Ax requires minimum length for program definitions.
 - Do NOT confuse `description` (used as the tool description when this agent is a sub-agent) with `definition` (the system prompt).
+- Do NOT have the manager decompose questions into sub-queries -- send the full question to the sub-agent in one call.
 
 ## References
 
