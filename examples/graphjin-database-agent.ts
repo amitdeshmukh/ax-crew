@@ -27,7 +27,9 @@ const config = {
       definition: `You are a database agent with direct access to a GraphJin database server.
 You have resource docs available that describe the GraphJin query DSL, mutation syntax, workflow guides, and JS runtime API. Read them to understand how GraphJin works — its DSL differs from standard GraphQL.
 You can discover additional action tools via search_tools.
-If a query fails, do not retry the same query — use fix_query_error or re-check the schema instead.`,
+If a query fails, do not retry the same query — use fix_query_error or re-check the schema instead.
+Before building a new query, check for existing saved queries or workflows that can answer the question.
+After completing a successful query, save it as a workflow so it can be reused in future requests.`,
       signature: 'question:string "a natural language question about the database" -> answer:string "the answer to the question"',
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
@@ -45,8 +47,6 @@ If a query fails, do not retry the same query — use fix_query_error or re-chec
           "args": ["mcp", "--server", "http://localhost:8080"]
         }
       },
-      // Force deferred mode with a low threshold for testing
-      // (GraphJin exposes ~30 tools, but this ensures it activates even with fewer)
       deferredTools: {
         enabled: true,
         threshold: 5,
@@ -84,49 +84,42 @@ const userQuery = "which products had the most refund requests and why?";
 console.log(`\nQuestion: ${userQuery}`);
 
 const main = async (): Promise<void> => {
+  const timers: Record<string, number> = {};
+
   try {
+    // --- Setup phase ---
+    const t0 = performance.now();
     await crew.addAllAgents();
+    timers["setup"] = performance.now() - t0;
 
     const managerAgent = crew.agents?.get("ManagerAgent");
-    const databaseAgent = crew.agents?.get("DatabaseAgent");
-
-    // Log the initial tool set for DatabaseAgent
-    const allFns = (databaseAgent as any)?.axGenProgram?.functions?.map((f: any) => f.name);
-    console.log(`\n--- DatabaseAgent initial tools (${allFns?.length ?? 0}) ---`);
-    console.log(allFns);
-
-    // Check if deferred mode is active
-    const dm = (databaseAgent as any)?.deferredToolManager;
-    console.log(`\nDeferred mode active: ${dm?.isActive ?? false}`);
 
     if (!managerAgent) {
       throw new Error("Failed to initialize ManagerAgent");
     }
 
-    console.log("\n--- Starting query (watch for search_tools calls) ---\n");
+    // --- Query phase ---
+    console.log("\n--- Starting query ---\n");
+    const t1 = performance.now();
 
     const managerResponse = await managerAgent.forward({
       question: userQuery,
     });
 
+    timers["query"] = performance.now() - t1;
+    timers["total"] = performance.now() - t0;
+
+    // --- Results ---
     console.log(`\nAnswer: ${JSON.stringify(managerResponse?.answer, null, 2)}`);
 
-    // Log final tool set to see what was activated
-    const finalFns = (databaseAgent as any)?.axGenProgram?.functions?.map((f: any) => f.name);
-    console.log(`\n--- DatabaseAgent final tools (${finalFns?.length ?? 0}) ---`);
-    console.log(finalFns);
+    // --- Timing & Metrics ---
+    console.log("\n--- Performance ---");
+    console.log(`  Setup:  ${(timers["setup"]! / 1000).toFixed(2)}s`);
+    console.log(`  Query:  ${(timers["query"]! / 1000).toFixed(2)}s`);
+    console.log(`  Total:  ${(timers["total"]! / 1000).toFixed(2)}s`);
 
-    // Show which tools were activated via search
-    if (allFns && finalFns) {
-      const activated = finalFns.filter((n: string) => !allFns.includes(n));
-      if (activated.length > 0) {
-        console.log(`\nTools activated via search_tools: ${activated.join(', ')}`);
-      }
-    }
-
-    // Print metrics
-    console.log("\nMetrics:\n+++++++++++++++++++++++++++++++++");
-    console.log("Crew Metrics:", JSON.stringify((crew as any)?.getCrewMetrics?.(), null, 2));
+    console.log("\n--- Metrics ---");
+    console.log(JSON.stringify((crew as any)?.getCrewMetrics?.(), null, 2));
   } catch (error) {
     console.error("\nError:", error);
     console.error("\nTroubleshooting:");
