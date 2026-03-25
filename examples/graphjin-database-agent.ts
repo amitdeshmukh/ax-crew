@@ -24,12 +24,26 @@ const config = {
     {
       name: "DatabaseAgent",
       description: "An agent with direct database access via GraphJin. Can explore database schema, query tables, list save and run workflows in the builtin JS sandbox etc.",
-      definition: `You are a database agent with direct access to a GraphJin database server.
-You have resource docs available that describe the GraphJin query DSL, mutation syntax, workflow guides, and JS runtime API. Read them to understand how GraphJin works — its DSL differs from standard GraphQL.
-You can discover additional action tools via search_tools.
-If a query fails, do not retry the same query — use fix_query_error or re-check the schema instead.
-Before building a new query, check for existing saved queries or workflows that can answer the question.
-After completing a successful query, save it as a workflow so it can be reused in future requests.`,
+      definition: `You answer questions by querying databases via a GraphJin server.
+You have resource docs available (query syntax, mutation syntax, workflow guides, JS runtime API). Read them to learn the GraphJin DSL — it differs from standard GraphQL.
+Use search_tools to discover additional action tools not shown by default.
+
+STRATEGY:
+1. Check first — call list_workflows and list_saved_queries. If a match exists, execute it and skip to step 5.
+
+2. Learn the environment:
+   a. Read resource docs (get_query_syntax, get_js_runtime_api) to understand the DSL and runtime API.
+   b. Call list_tables + describe_table for schema details. Use explore_relationships or find_path if joins are needed.
+
+3. Build and validate:
+   a. Author a JavaScript workflow using gj.tools.* for server-side computation. Design it with input variables — never hardcode values.
+   b. Call execute_graphql first to validate query shape and results before embedding in a workflow.
+
+4. Save and run — call save_workflow with a descriptive snake_case name and tags, then execute_workflow.
+
+5. If a query fails, do not retry the same query. Call fix_query_error or explain_query to diagnose, then fix and re-save.
+
+6. Synthesize the answer from results.`,
       signature: 'question:string "a natural language question about the database" -> answer:string "the answer to the question"',
       provider: "anthropic",
       providerKeyName: "ANTHROPIC_API_KEY",
@@ -79,7 +93,7 @@ If multiple agents are needed, call them and combine their answers.`,
 // Create a new instance of AxCrew with the config
 const crew = new AxCrew(config as AxCrewConfig);
 
-const userQuery = "which products had the most refund requests and why?";
+const userQuery = "Which employees have the most leave requests and how does that correlate with their performance review scores? Show the top 10.";
 
 console.log(`\nQuestion: ${userQuery}`);
 
