@@ -1,5 +1,11 @@
 # Changelog
 
+## [9.0.1] - 2026-03-29
+
+### Fixed
+- **Agent-level forward options now respected**: Config options like `maxSteps`, `showThoughts`, and `thinkingTokenBudget` defined in agent config `options` were parsed but never passed to `AxGen.forward()`. They are now merged as defaults under caller-supplied options.
+- **Removed hardcoded `contextCache` breakpoint**: The `cacheBreakpoint: 'after-examples'` setting on AxGen is removed, as it is no longer needed after prompt caching changes in 9.0.0.
+
 ## [9.0.0] - 2026-03-25
 
 ### Breaking Changes
