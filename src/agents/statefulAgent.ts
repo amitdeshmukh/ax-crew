@@ -42,6 +42,8 @@ export interface ParsedAgentConfig {
   subAgentNames: string[];
   examples?: Array<Record<string, any>>;
   tracker?: any;
+  /** Agent-level forward options (maxSteps, showThoughts, thinkingTokenBudget, etc.) used as defaults when the caller doesn't supply them. */
+  forwardOptions?: Record<string, any>;
 }
 
 // Extend the AxAgent class from ax-llm
@@ -55,6 +57,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
   private costTracker?: any;
   private debugEnabled: boolean = false;
   private deferredToolManager?: DeferredToolManager;
+  private agentForwardOptions?: Record<string, any>;
   private static readonly modernAxAgentRuntime =
     typeof (AxAgent as any)?.prototype?.getFunction === "function" &&
     typeof (AxAgent as any)?.prototype?.setExamples !== "function";
@@ -82,6 +85,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
       examples?: Array<Record<string, any>> | undefined;
       mcpServers?: Record<string, MCPTransportConfig> | undefined;
       debug?: boolean;
+      forwardOptions?: Record<string, any>;
     }>,
     state: StateInstance
   ) {
@@ -162,6 +166,7 @@ class StatefulAxAgent extends AxAgent<any, any> {
     this.agentDefinition = effectiveDefinition;
     this.executionMode = options.executionMode ?? "axgen";
     this.debugEnabled = debug ?? false;
+    this.agentForwardOptions = options.forwardOptions;
     // Convert sub-agents to callable functions so AxGen can invoke them as tools
     const subAgentFunctions: AxFunction[] = resolvedAgents
       .map(agent => {
@@ -173,7 +178,6 @@ class StatefulAxAgent extends AxAgent<any, any> {
     this.axGenProgram = new AxGen(options.signature as any, {
       description: effectiveDefinition,
       functions: [...resolvedFunctions, ...subAgentFunctions],
-      contextCache: { cacheBreakpoint: 'after-examples' },
     } as any);
 
     for (const agent of resolvedAgents) {
@@ -270,7 +274,12 @@ class StatefulAxAgent extends AxAgent<any, any> {
     }
 
     const values = (calledWithAI ? second : first) as Record<string, any>;
-    const options = (calledWithAI ? third : second) as Readonly<TOptions> | undefined;
+    const callerOptions = (calledWithAI ? third : second) as Readonly<TOptions> | undefined;
+
+    // Merge agent-level forward options as defaults under caller-supplied options
+    const options = this.agentForwardOptions
+      ? ({ ...this.agentForwardOptions, ...callerOptions } as Readonly<TOptions>)
+      : callerOptions;
 
     return { ai, values, options, calledWithAI };
   }

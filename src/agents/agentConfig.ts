@@ -237,6 +237,7 @@ const parseAgentConfig = async (
       tracker: costTracker,
       deferredTools: (agentConfigData as any).deferredTools,
       debug: (agentConfigData as any).options?.debug ?? (agentConfigData as any).debug ?? false,
+      forwardOptions: (agentConfigData as any).options,
     };
   } catch (error) {
     if (error instanceof Error) {

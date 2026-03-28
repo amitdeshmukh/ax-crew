@@ -93,7 +93,7 @@ class AxCrew {
         this.options
       );
 
-      const { ai, name, executionMode, axAgentOptions, description, signature, functions, subAgentNames, examples, tracker } = agentConfig;
+      const { ai, name, executionMode, axAgentOptions, description, signature, functions, subAgentNames, examples, tracker, forwardOptions } = agentConfig;
 
       // Get subagents for the AI agent
       const subAgents = subAgentNames.map((subAgentName: string) => {
@@ -182,6 +182,7 @@ class AxCrew {
           agents: uniqueSubAgents,
           examples,
           debug: (agentConfig as any).debug,
+          forwardOptions,
         },
         agentState as StateInstance
       );
