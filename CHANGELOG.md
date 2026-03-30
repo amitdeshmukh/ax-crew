@@ -1,5 +1,10 @@
 # Changelog
 
+## [9.0.2] - 2026-03-30
+
+### Added
+- **Dynamic API key support**: `AgentConfig` now accepts an `apiKey` field as a `string` or `() => Promise<string>`. This enables dynamic credential refresh for providers that support it (Google Gemini, Anthropic). When set, `apiKey` takes precedence over `providerKeyName`. Useful for Google Cloud hosted models where access tokens must be refreshed periodically.
+
 ## [9.0.1] - 2026-03-29
 
 ### Fixed

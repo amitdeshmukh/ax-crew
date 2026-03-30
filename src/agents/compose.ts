@@ -4,7 +4,7 @@ import type { AxCrewConfig } from '../types.js';
 
 type BuildProviderArgs = {
   provider: string;
-  apiKey: string;
+  apiKey: string | (() => Promise<string>);
   config: any;
   apiURL?: string;
   providerArgs?: Record<string, unknown>;
@@ -28,10 +28,15 @@ export function instantiateProvider({
 export function buildProvidersFromConfig(cfg: AxCrewConfig): AxAI<any>[] {
   const services: AxAI<any>[] = [];
   for (const agent of cfg.crew) {
-    const apiKeyName = agent.providerKeyName;
-    if (!apiKeyName) throw new Error(`Provider key name is missing for agent ${agent.name}`);
-    const apiKey = resolveApiKey(apiKeyName) || '';
-    if (!apiKey) throw new Error(`API key '${apiKeyName}' not set for agent ${agent.name}`);
+    let apiKey: string | (() => Promise<string>) = '';
+    if (agent.apiKey) {
+      apiKey = agent.apiKey;
+    } else if (agent.providerKeyName) {
+      apiKey = resolveApiKey(agent.providerKeyName) || '';
+      if (!apiKey) throw new Error(`API key '${agent.providerKeyName}' not set for agent ${agent.name}`);
+    } else {
+      throw new Error(`Either apiKey or providerKeyName must be provided for agent ${agent.name}`);
+    }
 
     const service = instantiateProvider({
       provider: String(agent.provider).toLowerCase(),

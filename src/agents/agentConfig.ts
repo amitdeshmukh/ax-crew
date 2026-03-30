@@ -143,16 +143,19 @@ const parseAgentConfig = async (
     const lower = String(agentConfigData.provider).toLowerCase() as Provider;
     const provider = lower as Provider;
 
-    // Resolve API key from user-supplied environment variable name
-    let apiKey = '';
-    if (agentConfigData.providerKeyName) {
+    // Resolve API key: direct apiKey (string or function) takes precedence over providerKeyName
+    let apiKey: string | (() => Promise<string>) = '';
+    if (agentConfigData.apiKey) {
+      // Direct apiKey provided — use as-is (supports string or async function for token refresh)
+      apiKey = agentConfigData.apiKey;
+    } else if (agentConfigData.providerKeyName) {
       const keyName = agentConfigData.providerKeyName;
       apiKey = resolveApiKey(keyName) || '';
       if (!apiKey) {
         throw new Error(`API key '${keyName}' for provider ${agentConfigData.provider} is not set in environment`);
       }
     } else {
-      throw new Error(`Provider key name is missing in the agent configuration`);
+      throw new Error(`Either apiKey or providerKeyName must be provided in the agent configuration`);
     }
 
     // Create a cost tracker instance and pass to ai()

@@ -25,6 +25,7 @@ interface AgentConfig {
   };
 
   // Optional
+  apiKey?: string | (() => Promise<string>); // Direct API key or async token-refresh function
   providerKeyName?: string;        // Env var name for API key (e.g. "OPENAI_API_KEY")
   apiURL?: string;                 // Custom API endpoint (e.g. ollama on localhost)
   providerArgs?: Record<string, unknown>; // Provider-specific args forwarded to Ax factory
@@ -89,6 +90,44 @@ The `providerKeyName` field specifies which environment variable holds the API k
   providerKeyName: "OPENAI_API_KEY",  // reads process.env.OPENAI_API_KEY
 }
 ```
+
+## Dynamic API Key (Token Refresh)
+
+For providers that support it (Google Gemini, Anthropic), `apiKey` can be an async function that returns a fresh token on each call. This is useful for Google Cloud hosted models where access tokens expire.
+
+```ts
+import { GoogleAuth } from "google-auth-library";
+
+const googleAuth = new GoogleAuth({
+  scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+});
+
+const getGoogleToken = async (): Promise<string> => {
+  const client = await googleAuth.getClient();
+  const response = await client.getAccessToken();
+  if (!response.token) throw new Error("Failed to get Google token");
+  return response.token;
+};
+
+const config: AxCrewConfig = {
+  crew: [
+    {
+      name: "GeminiAgent",
+      description: "Agent using Google Cloud Vertex AI with token refresh",
+      provider: "google-gemini",
+      apiKey: getGoogleToken,  // called on each request to get a fresh token
+      signature: "userQuery:string -> answer:string",
+      ai: { model: "gemini-2.0-flash", temperature: 0 },
+      providerArgs: {
+        projectId: "your-gcp-project-id",
+        region: "global",
+      },
+    }
+  ]
+};
+```
+
+When `apiKey` is set, `providerKeyName` is not required.
 
 ## Azure OpenAI Example
 
@@ -175,10 +214,11 @@ Supported types: `string`, `number`, `boolean`, `string[]`, `number[]`, etc.
 - Do NOT omit `name`, `description`, `signature`, `provider`, or `ai.model` -- all are required.
 - Do NOT set `definition` to less than 100 characters if you provide it (Ax enforces this minimum).
 - Do NOT confuse `options.stream` (forward option) with `ai.stream` (AI-level streaming config).
-- Do NOT use `providerArgs` for API keys; use `providerKeyName` instead.
+- Do NOT use `providerArgs` for API keys; use `apiKey` or `providerKeyName` instead.
 - Do NOT list sub-agents in `agents` that haven't been added to the crew before the parent agent.
 
 ## References
 
 - [basic-researcher-writer.ts](examples/basic-researcher-writer.ts)
 - [providerArgs.ts](examples/providerArgs.ts)
+- [google-cloud-token-refresh.ts](examples/google-cloud-token-refresh.ts)

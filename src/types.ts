@@ -11,6 +11,12 @@ import type {
 // Provider ids are derived from Ax's factory arg type so new providers added in Ax
 // are picked up at compile time without updating AxCrew.
 export type Provider = AxAIArgs<any>['name'];
+
+/**
+ * An async function that returns an API key string.
+ * Useful for providers that support dynamic token refresh (e.g., Google Cloud, Anthropic).
+ */
+export type ApiKeyFunction = () => Promise<string>;
 export type AgentExecutionMode = 'axagent' | 'axgen';
 export type AxCrewAxAgentOptions =
   Partial<Omit<AxAgentOptions, 'agents' | 'functions' | 'contextFields'>> & {
@@ -261,6 +267,13 @@ interface AgentConfig {
   prompt?: string;
   signature: string | AxSignature;
   provider: Provider;
+  /**
+   * Direct API key as a string or an async function that returns one.
+   * When a function is provided, it is called by the provider on each request,
+   * enabling dynamic credential refresh (e.g., Google Cloud access tokens).
+   * Takes precedence over `providerKeyName` when both are set.
+   */
+  apiKey?: string | ApiKeyFunction;
   providerKeyName?: string;
   ai: AxModelConfig & { model: string };
   debug?: boolean;

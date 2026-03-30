@@ -22,11 +22,42 @@ type Provider = AxAIArgs<any>['name'];
 ```ts
 interface AgentConfig {
   provider: Provider;              // e.g. "openai"
+  apiKey?: string | (() => Promise<string>); // direct key or async token-refresh fn
   providerKeyName?: string;        // env var name, e.g. "OPENAI_API_KEY"
   ai: AxModelConfig & { model: string }; // model name + temperature, maxTokens, etc.
   apiURL?: string;                 // custom endpoint (ollama, proxies)
   providerArgs?: Record<string, unknown>; // provider-specific args (azure, etc.)
   options?: Partial<AxProgramForwardOptions<any>> & Record<string, any>; // searchParameters, codeExecution, etc.
+}
+```
+
+## Dynamic API Key (Token Refresh)
+
+For providers that support it (Google Gemini, Anthropic), `apiKey` can be an async function returning a fresh token. When `apiKey` is set, `providerKeyName` is not required.
+
+```ts
+import { GoogleAuth } from "google-auth-library";
+
+const googleAuth = new GoogleAuth({
+  scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+});
+
+const getGoogleToken = async (): Promise<string> => {
+  const client = await googleAuth.getClient();
+  const response = await client.getAccessToken();
+  if (!response.token) throw new Error("Failed to get Google token");
+  return response.token;
+};
+
+{
+  name: "GeminiAgent",
+  provider: "google-gemini",
+  apiKey: getGoogleToken,
+  ai: { model: "gemini-2.0-flash", temperature: 0 },
+  providerArgs: {
+    projectId: "your-gcp-project-id",
+    region: "global",
+  },
 }
 ```
 
@@ -194,11 +225,11 @@ main().catch(console.error);
 
 ## Do Not Generate
 
-- Do NOT hardcode API keys in config -- always use `providerKeyName` which reads from `process.env`.
-- Do NOT use `providerArgs` for non-Azure providers unless the Ax factory documents it -- standard providers only need `provider`, `providerKeyName`, `ai`, and optionally `apiURL`.
+- Do NOT hardcode API keys in config -- use `providerKeyName` (env var) or `apiKey` (string or async function).
+- Do NOT use `providerArgs` for non-Azure providers unless the Ax factory documents it -- standard providers only need `provider`, `apiKey` or `providerKeyName`, `ai`, and optionally `apiURL`.
 - Do NOT confuse `options.searchParameters` (Grok-specific forward option) with `mcpServers` (external tool servers).
 - Do NOT set `provider: "perplexity"` -- Perplexity is accessed via an MCP server, not as a native Ax provider.
-- Do NOT omit `providerKeyName` -- the crew will throw at initialization if the env var is missing.
+- Do NOT omit both `apiKey` and `providerKeyName` -- the crew requires at least one to resolve credentials.
 
 ## References
 
@@ -206,4 +237,5 @@ main().catch(console.error);
 - [search-tweets.ts](examples/search-tweets.ts) (Grok/xAI)
 - [perplexityDeepSearch.ts](examples/perplexityDeepSearch.ts) (Perplexity MCP)
 - [write-post-and-publish-to-wordpress.ts](examples/write-post-and-publish-to-wordpress.ts) (mixed providers)
+- [google-cloud-token-refresh.ts](examples/google-cloud-token-refresh.ts) (dynamic API key)
 - [src/agents/compose.ts](src/agents/compose.ts)
